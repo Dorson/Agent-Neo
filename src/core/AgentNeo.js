@@ -131,6 +131,11 @@ class AgentNeo {
             const { default: SessionContextModule } = await import('../modules/SessionContextModule.js');
             const { default: IPFSModule } = await import('../modules/IPFSModule.js');
             
+            // Import new evolution modules
+            const { default: SelfEvolvingProtocolRegistry } = await import('../modules/SelfEvolvingProtocolRegistry.js');
+            const { default: ModuleSeedingSystem } = await import('../modules/ModuleSeedingSystem.js');
+            const { default: SymbioticContractsSystem } = await import('../modules/SymbioticContractsSystem.js');
+            
             // Register modules with their actual instances
             this.registerModule({
                 name: 'EthicsModule',
@@ -199,6 +204,37 @@ class AgentNeo {
                 instance: ipfsModule
             });
             
+            // Register new evolution modules
+            const protocolRegistry = new SelfEvolvingProtocolRegistry();
+            this.registerModule({
+                name: 'SelfEvolvingProtocolRegistry',
+                version: protocolRegistry.version,
+                status: 'loaded',
+                capabilities: ['protocol_evolution', 'consensus_management', 'network_bridging', 'cross_network_discovery'],
+                dependencies: ['P2PNetwork'],
+                instance: protocolRegistry
+            });
+            
+            const moduleSeedingSystem = new ModuleSeedingSystem();
+            this.registerModule({
+                name: 'ModuleSeedingSystem',
+                version: moduleSeedingSystem.version,
+                status: 'loaded',
+                capabilities: ['module_evolution', 'code_mutation', 'skill_extraction', 'compositional_evolution'],
+                dependencies: ['EthicsModule', 'ProprioceptionModule'],
+                instance: moduleSeedingSystem
+            });
+            
+            const symbioticContractsSystem = new SymbioticContractsSystem();
+            this.registerModule({
+                name: 'SymbioticContractsSystem',
+                version: symbioticContractsSystem.version,
+                status: 'loaded',
+                capabilities: ['contract_management', 'resource_sharing', 'relationship_optimization', 'tithe_collection'],
+                dependencies: ['EthicsModule', 'TaskAuctionSystem'],
+                instance: symbioticContractsSystem
+            });
+            
             console.log('✅ Core modules loaded successfully');
             
         } catch (error) {
@@ -212,7 +248,10 @@ class AgentNeo {
                 { name: 'P2PNetwork', capabilities: ['networking'] },
                 { name: 'TaskAuctionSystem', capabilities: ['task_auction', 'proof_of_performance'] },
                 { name: 'SessionContextModule', capabilities: ['session_management', 'context_tracking'] },
-                { name: 'IPFSModule', capabilities: ['file_storage', 'distributed_storage'] }
+                { name: 'IPFSModule', capabilities: ['file_storage', 'distributed_storage'] },
+                { name: 'SelfEvolvingProtocolRegistry', capabilities: ['protocol_evolution', 'consensus_management'] },
+                { name: 'ModuleSeedingSystem', capabilities: ['module_evolution', 'code_mutation'] },
+                { name: 'SymbioticContractsSystem', capabilities: ['contract_management', 'resource_sharing'] }
             ];
             
             for (const moduleInfo of fallbackModules) {
