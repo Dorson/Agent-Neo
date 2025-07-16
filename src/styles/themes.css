@@ -1,0 +1,404 @@
+/* Agent Neo Theme System */
+
+/* Base theme switching animation */
+* {
+    transition: background-color var(--transition-base), 
+                border-color var(--transition-base), 
+                color var(--transition-base);
+}
+
+/* Dark Theme (Default) */
+[data-theme="dark"] {
+    --color-bg-primary: #0f0f1a;
+    --color-bg-secondary: #1a1a2e;
+    --color-bg-tertiary: #16213e;
+    --color-bg-elevated: #1e293b;
+    --color-bg-overlay: rgba(15, 15, 26, 0.95);
+    --color-bg-glass: rgba(26, 26, 46, 0.8);
+    
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #cbd5e1;
+    --color-text-tertiary: #94a3b8;
+    --color-text-muted: #64748b;
+    --color-text-inverse: #1e293b;
+    
+    --color-border-primary: #334155;
+    --color-border-secondary: #475569;
+    --color-border-light: rgba(203, 213, 225, 0.1);
+    
+    --color-shadow-glow: rgba(0, 255, 159, 0.3);
+    --neo-glow-primary: 0 0 20px rgba(0, 255, 159, 0.5);
+    --neo-glow-secondary: 0 0 15px rgba(124, 58, 237, 0.4);
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f8fafc;
+    --color-bg-tertiary: #f1f5f9;
+    --color-bg-elevated: #ffffff;
+    --color-bg-overlay: rgba(248, 250, 252, 0.95);
+    --color-bg-glass: rgba(248, 250, 252, 0.8);
+    
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #334155;
+    --color-text-tertiary: #64748b;
+    --color-text-muted: #94a3b8;
+    --color-text-inverse: #ffffff;
+    
+    --color-border-primary: #e2e8f0;
+    --color-border-secondary: #cbd5e1;
+    --color-border-light: rgba(15, 23, 42, 0.1);
+    
+    --color-shadow-light: rgba(0, 0, 0, 0.05);
+    --color-shadow-medium: rgba(0, 0, 0, 0.1);
+    --color-shadow-heavy: rgba(0, 0, 0, 0.2);
+    --color-shadow-glow: rgba(124, 58, 237, 0.2);
+    --neo-glow-primary: 0 0 20px rgba(0, 255, 159, 0.3);
+    --neo-glow-secondary: 0 0 15px rgba(124, 58, 237, 0.3);
+    
+    /* Adjust primary colors for better contrast in light mode */
+    --color-primary: #059669;
+    --color-primary-dark: #047857;
+    --color-primary-light: #10b981;
+}
+
+/* High Contrast Theme */
+[data-theme="high-contrast"] {
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #111111;
+    --color-bg-tertiary: #222222;
+    --color-bg-elevated: #1a1a1a;
+    --color-bg-overlay: rgba(0, 0, 0, 0.98);
+    --color-bg-glass: rgba(17, 17, 17, 0.9);
+    
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #ffffff;
+    --color-text-tertiary: #cccccc;
+    --color-text-muted: #999999;
+    --color-text-inverse: #000000;
+    
+    --color-border-primary: #ffffff;
+    --color-border-secondary: #cccccc;
+    --color-border-light: rgba(255, 255, 255, 0.3);
+    
+    --color-primary: #00ff00;
+    --color-primary-dark: #00cc00;
+    --color-primary-light: #33ff33;
+    --color-accent: #ffff00;
+    --color-accent-dark: #cccc00;
+    --color-accent-light: #ffff33;
+    
+    --color-shadow-glow: rgba(0, 255, 0, 0.5);
+    --neo-glow-primary: 0 0 20px rgba(0, 255, 0, 0.8);
+    --neo-glow-secondary: 0 0 15px rgba(255, 255, 0, 0.6);
+}
+
+/* Cyberpunk Theme */
+[data-theme="cyberpunk"] {
+    --color-bg-primary: #0a0a0f;
+    --color-bg-secondary: #1a0f1a;
+    --color-bg-tertiary: #2a1f2a;
+    --color-bg-elevated: #1f1a2e;
+    --color-bg-overlay: rgba(10, 10, 15, 0.95);
+    --color-bg-glass: rgba(26, 15, 26, 0.8);
+    
+    --color-text-primary: #ff00ff;
+    --color-text-secondary: #00ffff;
+    --color-text-tertiary: #ff0080;
+    --color-text-muted: #8000ff;
+    --color-text-inverse: #0a0a0f;
+    
+    --color-border-primary: #ff00ff;
+    --color-border-secondary: #00ffff;
+    --color-border-light: rgba(255, 0, 255, 0.2);
+    
+    --color-primary: #ff0080;
+    --color-primary-dark: #cc0066;
+    --color-primary-light: #ff3399;
+    --color-accent: #00ffff;
+    --color-accent-dark: #00cccc;
+    --color-accent-light: #33ffff;
+    
+    --color-shadow-glow: rgba(255, 0, 128, 0.5);
+    --neo-glow-primary: 0 0 30px rgba(255, 0, 128, 0.8);
+    --neo-glow-secondary: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* Matrix Theme */
+[data-theme="matrix"] {
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #001100;
+    --color-bg-tertiary: #002200;
+    --color-bg-elevated: #003300;
+    --color-bg-overlay: rgba(0, 0, 0, 0.98);
+    --color-bg-glass: rgba(0, 17, 0, 0.8);
+    
+    --color-text-primary: #00ff41;
+    --color-text-secondary: #00cc33;
+    --color-text-tertiary: #008822;
+    --color-text-muted: #006611;
+    --color-text-inverse: #000000;
+    
+    --color-border-primary: #00ff41;
+    --color-border-secondary: #00cc33;
+    --color-border-light: rgba(0, 255, 65, 0.2);
+    
+    --color-primary: #00ff41;
+    --color-primary-dark: #00cc33;
+    --color-primary-light: #33ff66;
+    --color-accent: #00ffaa;
+    --color-accent-dark: #00cc88;
+    --color-accent-light: #33ffbb;
+    
+    --color-shadow-glow: rgba(0, 255, 65, 0.5);
+    --neo-glow-primary: 0 0 25px rgba(0, 255, 65, 0.8);
+    --neo-glow-secondary: 0 0 15px rgba(0, 255, 170, 0.6);
+}
+
+/* Theme-specific component overrides */
+
+/* Dark theme specific adjustments */
+[data-theme="dark"] .loading-screen {
+    background: radial-gradient(circle at center, 
+                #1a1a2e 0%, 
+                #0f0f1a 70%);
+}
+
+[data-theme="dark"] .neo-logo {
+    filter: drop-shadow(0 0 20px var(--color-primary));
+}
+
+/* Light theme specific adjustments */
+[data-theme="light"] .loading-screen {
+    background: radial-gradient(circle at center, 
+                #f8fafc 0%, 
+                #ffffff 70%);
+}
+
+[data-theme="light"] .card {
+    box-shadow: var(--shadow-md);
+}
+
+[data-theme="light"] .card:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+[data-theme="light"] .app-header {
+    backdrop-filter: blur(10px);
+    background: rgba(248, 250, 252, 0.9);
+}
+
+/* High contrast theme specific adjustments */
+[data-theme="high-contrast"] .btn {
+    border-width: 2px;
+    font-weight: var(--font-weight-bold);
+}
+
+[data-theme="high-contrast"] .card {
+    border-width: 2px;
+}
+
+[data-theme="high-contrast"] .nav-item.active {
+    border-left-width: 5px;
+}
+
+[data-theme="high-contrast"] .status-indicator {
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+}
+
+/* Cyberpunk theme specific adjustments */
+[data-theme="cyberpunk"] .loading-screen {
+    background: radial-gradient(circle at center, 
+                #1a0f1a 0%, 
+                #0a0a0f 70%);
+}
+
+[data-theme="cyberpunk"] .neo-logo::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    background: linear-gradient(45deg, 
+                transparent, 
+                rgba(255, 0, 255, 0.1), 
+                transparent, 
+                rgba(0, 255, 255, 0.1));
+    border-radius: var(--radius-full);
+    animation: cyberpunkGlow 3s linear infinite;
+}
+
+[data-theme="cyberpunk"] .card {
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="cyberpunk"] .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 0, 255, 0.1), 
+                transparent);
+    transition: left 0.5s;
+}
+
+[data-theme="cyberpunk"] .card:hover::before {
+    left: 100%;
+}
+
+/* Matrix theme specific adjustments */
+[data-theme="matrix"] .loading-screen {
+    background: #000000;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="matrix"] .loading-screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 255, 65, 0.03) 2px,
+            rgba(0, 255, 65, 0.03) 4px
+        );
+    animation: matrixLines 20s linear infinite;
+}
+
+[data-theme="matrix"] .message-content {
+    font-family: var(--font-family-mono);
+    text-shadow: 0 0 5px currentColor;
+}
+
+[data-theme="matrix"] .activity-log {
+    text-shadow: 0 0 3px currentColor;
+}
+
+/* Theme transition animations */
+@keyframes cyberpunkGlow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes matrixLines {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(20px); }
+}
+
+/* Theme-specific scrollbar styling */
+[data-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--color-bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border-primary);
+    border-radius: var(--radius-full);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+    background: var(--color-bg-tertiary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+    background: var(--color-border-secondary);
+    border-radius: var(--radius-full);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-primary);
+}
+
+/* Theme toggle button states */
+.theme-toggle[data-theme="dark"] .btn-icon::before {
+    content: '🌙';
+}
+
+.theme-toggle[data-theme="light"] .btn-icon::before {
+    content: '☀️';
+}
+
+.theme-toggle[data-theme="high-contrast"] .btn-icon::before {
+    content: '⚡';
+}
+
+.theme-toggle[data-theme="cyberpunk"] .btn-icon::before {
+    content: '🔮';
+}
+
+.theme-toggle[data-theme="matrix"] .btn-icon::before {
+    content: '🔯';
+}
+
+/* Reduced motion preferences for themes */
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="cyberpunk"] .neo-logo::before,
+    [data-theme="cyberpunk"] .card::before,
+    [data-theme="matrix"] .loading-screen::before {
+        animation: none;
+    }
+}
+
+/* Print styles that work across themes */
+@media print {
+    [data-theme] {
+        --color-bg-primary: #ffffff;
+        --color-bg-secondary: #ffffff;
+        --color-text-primary: #000000;
+        --color-text-secondary: #000000;
+        --color-border-primary: #000000;
+    }
+    
+    [data-theme] .neo-logo,
+    [data-theme] .card::before,
+    [data-theme] .loading-screen::before {
+        display: none;
+    }
+}
+
+/* Auto theme based on system preference */
+@media (prefers-color-scheme: light) {
+    :root:not([data-theme]) {
+        --color-bg-primary: #ffffff;
+        --color-bg-secondary: #f8fafc;
+        --color-text-primary: #0f172a;
+        --color-text-secondary: #334155;
+        --color-border-primary: #e2e8f0;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) {
+        --color-bg-primary: #0f0f1a;
+        --color-bg-secondary: #1a1a2e;
+        --color-text-primary: #f8fafc;
+        --color-text-secondary: #cbd5e1;
+        --color-border-primary: #334155;
+    }
+}
