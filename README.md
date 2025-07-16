@@ -1,6 +1,6 @@
 # Agent Neo - Decentralized AI Agent DApp
 
-![Agent Neo Logo](assets/icons/icon-192x192.png)
+![Agent Neo DEMO][(assets/icons/icon-192x192.png)](https://dorson.github.io/Agent-Neo/)
 
 ## Overview
 
