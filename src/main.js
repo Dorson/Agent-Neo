@@ -23,7 +23,7 @@ import dashboard from './ui/components/Dashboard.js';
 import chat from './ui/components/Chat.js';
 import settings from './ui/components/Settings.js';
 
-// Import new core modules
+// Import existing core modules
 import TaskAuctionSystem from './modules/TaskAuctionSystem.js';
 import SessionContextModule from './modules/SessionContextModule.js';
 import IPFSModule from './modules/IPFSModule.js';
@@ -34,6 +34,12 @@ import AIModuleManager from './modules/AIModuleManager.js';
 import DataResourceManager from './modules/DataResourceManager.js';
 import ConsensusManager from './modules/ConsensusManager.js';
 import NLPProcessor from './modules/NLPProcessor.js';
+
+// Import new modules for missing functionality
+import ZeroKnowledgeProofSystem from './modules/ZeroKnowledgeProofSystem.js';
+import SkillModuleSandbox from './modules/SkillModuleSandbox.js';
+import DecentralizedSkillModuleLoader from './modules/DecentralizedSkillModuleLoader.js';
+import EnhancedSettingsManager from './modules/EnhancedSettingsManager.js';
 
 // Import new UI components
 import TasksView from './ui/components/TasksView.js';
@@ -46,9 +52,9 @@ class AgentNeoApp {
         this.modules = new Map();
         this.initializationPromise = null;
         
-        // Initialize new core modules
+        // Initialize existing core modules
         this.taskAuctionSystem = new TaskAuctionSystem();
-        this.sessionContext = new SessionContextModule();
+        this.sessionContextModule = new SessionContextModule();
         this.ipfsModule = new IPFSModule();
         this.taskManager = new TaskManager();
         this.voiceInterface = new VoiceInterface();
@@ -58,279 +64,199 @@ class AgentNeoApp {
         this.consensusManager = new ConsensusManager();
         this.nlpProcessor = new NLPProcessor();
         
-        // Initialize UI components
-        this.tasksView = new TasksView();
+        // Initialize new modules for missing functionality
+        this.zeroKnowledgeProofSystem = new ZeroKnowledgeProofSystem();
+        this.skillModuleSandbox = new SkillModuleSandbox();
+        this.decentralizedSkillModuleLoader = new DecentralizedSkillModuleLoader();
+        this.enhancedSettingsManager = new EnhancedSettingsManager();
+        
+        // Performance monitoring
+        this.performanceMetrics = {
+            initializationTime: 0,
+            moduleLoadTime: 0,
+            errorCount: 0,
+            warningCount: 0
+        };
+        
+        // Error handling
+        this.errorHandler = this.setupErrorHandler();
         
         this.init();
     }
-
+    
     async init() {
-        if (this.initializationPromise) {
-            return this.initializationPromise;
-        }
-        
-        this.initializationPromise = this.performInitialization();
-        return this.initializationPromise;
-    }
-
-    async performInitialization() {
         try {
-            console.log('🚀 Agent Neo starting initialization...');
-            console.log(`📦 Version: ${this.version}`);
+            console.log('🚀 Starting Agent Neo Application...');
+            const startTime = Date.now();
             
-            // Show loading progress
-            this.updateLoadingProgress('Initializing core systems...', 10);
-            
-            // Initialize error handling first
+            // Initialize error handling
             this.setupGlobalErrorHandling();
             
-            // Initialize core systems
-            this.updateLoadingProgress('Setting up event bus...', 20);
-            await this.initializeEventBus();
+            // Initialize modules in order
+            await this.initializeModules();
             
-            this.updateLoadingProgress('Setting up state management...', 30);
-            await this.initializeStateManager();
+            // Initialize UI
+            await this.initializeUI();
             
-            this.updateLoadingProgress('Initializing Agent Neo core...', 50);
-            await this.initializeAgentNeo();
-            
-            this.updateLoadingProgress('Loading UI components...', 70);
-            await this.initializeUIManager();
-            
-            this.updateLoadingProgress('Registering service worker...', 80);
+            // Register service worker
             await this.registerServiceWorker();
             
-            this.updateLoadingProgress('Setting up module communication...', 90);
-            await this.setupModuleCommunication();
+            // Setup performance monitoring
+            this.setupPerformanceMonitoring();
             
-            this.updateLoadingProgress('Starting system monitoring...', 95);
-            this.startSystemMonitoring();
-            
-            this.updateLoadingProgress('Finalizing initialization...', 98);
-            await this.finalizeInitialization();
-            
-            this.updateLoadingProgress('Complete!', 100);
-            
+            // Mark as initialized
             this.initialized = true;
-            const initTime = Date.now() - this.startTime;
+            this.performanceMetrics.initializationTime = Date.now() - startTime;
             
-            console.log(`✅ Agent Neo initialized successfully in ${initTime}ms`);
+            console.log(`✅ Agent Neo Application initialized in ${this.performanceMetrics.initializationTime}ms`);
             
             // Emit initialization complete event
             eventBus.emit('app:initialized', {
                 version: this.version,
-                initTime,
-                timestamp: Date.now()
+                initializationTime: this.performanceMetrics.initializationTime,
+                modules: this.modules.size
             });
             
-            // Auto-start if configured
-            const autoStart = stateManager.getState('settings.autoStart', false);
-            if (autoStart) {
-                setTimeout(() => {
-                    eventBus.emit('agent:start');
-                }, 1000);
+        } catch (error) {
+            console.error('❌ Failed to initialize Agent Neo Application:', error);
+            this.handleInitializationError(error);
+        }
+    }
+    
+    async initializeModules() {
+        console.log('📦 Initializing modules...');
+        const moduleStartTime = Date.now();
+        
+        // Define module initialization order (dependencies first)
+        const moduleInitOrder = [
+            // Core infrastructure first
+            { name: 'EnhancedSettingsManager', instance: this.enhancedSettingsManager },
+            { name: 'IPFSModule', instance: this.ipfsModule },
+            { name: 'DataResourceManager', instance: this.dataResourceManager },
+            
+            // Network and communication
+            { name: 'NetworkTopologyOptimizer', instance: this.networkTopologyOptimizer },
+            { name: 'ConsensusManager', instance: this.consensusManager },
+            
+            // AI and processing
+            { name: 'AIModuleManager', instance: this.aiModuleManager },
+            { name: 'NLPProcessor', instance: this.nlpProcessor },
+            
+            // Security and validation
+            { name: 'ZeroKnowledgeProofSystem', instance: this.zeroKnowledgeProofSystem },
+            { name: 'SkillModuleSandbox', instance: this.skillModuleSandbox },
+            
+            // Module management
+            { name: 'DecentralizedSkillModuleLoader', instance: this.decentralizedSkillModuleLoader },
+            
+            // Task management
+            { name: 'TaskManager', instance: this.taskManager },
+            { name: 'TaskAuctionSystem', instance: this.taskAuctionSystem },
+            
+            // User interaction
+            { name: 'VoiceInterface', instance: this.voiceInterface },
+            { name: 'SessionContextModule', instance: this.sessionContextModule }
+        ];
+        
+        // Initialize modules sequentially to handle dependencies
+        for (const moduleInfo of moduleInitOrder) {
+            try {
+                console.log(`📦 Initializing ${moduleInfo.name}...`);
+                
+                if (moduleInfo.instance && typeof moduleInfo.instance.initialize === 'function') {
+                    await moduleInfo.instance.initialize();
+                }
+                
+                // Register module
+                this.modules.set(moduleInfo.name, moduleInfo.instance);
+                
+                console.log(`✅ ${moduleInfo.name} initialized successfully`);
+                
+            } catch (error) {
+                console.error(`❌ Failed to initialize ${moduleInfo.name}:`, error);
+                this.performanceMetrics.errorCount++;
+                
+                // Continue with other modules unless it's a critical dependency
+                if (this.isCriticalModule(moduleInfo.name)) {
+                    throw new Error(`Critical module ${moduleInfo.name} failed to initialize: ${error.message}`);
+                }
             }
+        }
+        
+        // Register modules with AgentNeo core
+        await this.registerModulesWithCore();
+        
+        this.performanceMetrics.moduleLoadTime = Date.now() - moduleStartTime;
+        console.log(`📦 Modules initialized in ${this.performanceMetrics.moduleLoadTime}ms`);
+    }
+    
+    async registerModulesWithCore() {
+        console.log('🔗 Registering modules with AgentNeo core...');
+        
+        // Register all modules with the core Agent Neo system
+        for (const [name, instance] of this.modules) {
+            try {
+                await agentNeo.registerModule({
+                    name,
+                    instance,
+                    capabilities: instance.capabilities || [],
+                    dependencies: instance.dependencies || []
+                });
+            } catch (error) {
+                console.error(`Failed to register module ${name}:`, error);
+            }
+        }
+        
+        console.log(`🔗 Registered ${this.modules.size} modules with core`);
+    }
+    
+    async initializeUI() {
+        console.log('🎨 Initializing UI...');
+        
+        try {
+            // Initialize UI manager
+            await uiManager.init();
+            
+            // Initialize UI components
+            await dashboard.init?.();
+            await chat.init?.();
+            await settings.init?.();
+            
+            console.log('✅ UI initialized successfully');
             
         } catch (error) {
-            console.error('❌ Agent Neo initialization failed:', error);
-            this.handleInitializationError(error);
+            console.error('❌ Failed to initialize UI:', error);
             throw error;
         }
     }
-
-    async initializeEventBus() {
-        // EventBus is already initialized as a singleton
-        eventBus.setDebugMode(this.isDebugMode());
-        
-        // Set up app-level event listeners
-        eventBus.on('app:error', this.handleAppError.bind(this));
-        eventBus.on('app:restart', this.restart.bind(this));
-        eventBus.on('app:shutdown', this.shutdown.bind(this));
-        
-        console.log('📡 EventBus initialized');
-    }
-
-    async initializeStateManager() {
-        // StateManager is already initialized as a singleton
-        stateManager.setDebugMode(this.isDebugMode());
-        
-        // Add middleware for logging state changes in debug mode
-        if (this.isDebugMode()) {
-            stateManager.addMiddleware((action) => {
-                console.log('🔄 State change:', action);
-                return action;
-            });
-        }
-        
-        console.log('🗄️ StateManager initialized');
-    }
-
-    async initializeAgentNeo() {
-        // AgentNeo is already initialized as a singleton
-        // Wait for it to complete initialization
-        if (!agentNeo.initialized) {
-            await new Promise(resolve => {
-                if (agentNeo.initialized) {
-                    resolve();
-                } else {
-                    eventBus.once('agent:initialized', resolve);
-                }
-            });
-        }
-        
-        console.log('🤖 Agent Neo core initialized');
-    }
-
-    async initializeUIManager() {
-        // UIManager is already initialized as a singleton
-        // Wait for it to complete initialization
-        if (!uiManager.initialized) {
-            await new Promise(resolve => {
-                const checkInitialized = () => {
-                    if (uiManager.initialized) {
-                        resolve();
-                    } else {
-                        setTimeout(checkInitialized, 100);
-                    }
-                };
-                checkInitialized();
-            });
-        }
-        
-        console.log('🎨 UI Manager initialized');
-    }
-
+    
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/sw.js');
-                console.log('📱 Service Worker registered:', registration);
+                console.log('✅ Service Worker registered:', registration);
                 
                 // Listen for updates
                 registration.addEventListener('updatefound', () => {
                     console.log('🔄 Service Worker update found');
-                    eventBus.emit('app:update-available');
                 });
                 
-                stateManager.setState('app.serviceWorkerRegistered', true);
-                
             } catch (error) {
-                console.warn('⚠️ Service Worker registration failed:', error);
-                stateManager.setState('app.serviceWorkerRegistered', false);
+                console.error('❌ Service Worker registration failed:', error);
+                this.performanceMetrics.warningCount++;
             }
-        } else {
-            console.warn('⚠️ Service Worker not supported');
-            stateManager.setState('app.serviceWorkerRegistered', false);
         }
     }
-
-    async setupModuleCommunication() {
-        // Set up inter-module communication patterns
-        
-        // Task completion updates performance metrics
-        eventBus.on('task:completed', ({ duration }) => {
-            const completed = stateManager.getState('performance.tasksCompleted', 0);
-            stateManager.setState('performance.tasksCompleted', completed + 1);
-        });
-        
-        // Resource limit enforcement
-        eventBus.on('resources:limit-exceeded', ({ resource, value, limit }) => {
-            console.warn(`⚠️ Resource limit exceeded: ${resource} (${value}/${limit})`);
-            eventBus.emit('agent:throttle', { resource, value, limit });
-        });
-        
-        // Ethics violations handling
-        eventBus.on('ethics:violation', ({ violation, context }) => {
-            console.warn('⚠️ Ethics violation detected:', violation, context);
-            stateManager.setState('ethics.violations', [
-                ...stateManager.getState('ethics.violations', []),
-                { violation, context, timestamp: Date.now() }
-            ]);
-        });
-        
-        // UI state persistence
-        eventBus.on('ui:state:save', ({ key, value }) => {
-            try {
-                localStorage.setItem(`agentneo_ui_${key}`, JSON.stringify(value));
-            } catch (error) {
-                console.warn('Failed to save UI state:', error);
-            }
-        });
-        
-        // Chat response integration with voice
-        eventBus.on('chat:response', ({ response, sessionId, inputMethod }) => {
-            if (inputMethod === 'voice' && this.voiceInterface) {
-                this.voiceInterface.speak(response);
-            }
-        });
-        
-        // Voice button integration
-        eventBus.on('ui:voice-button-clicked', () => {
-            if (this.voiceInterface) {
-                this.voiceInterface.toggleListening();
-            }
-        });
-        
-        // Task view integration
-        eventBus.on('ui:navigate', ({ view }) => {
-            if (view === 'tasks' && this.tasksView) {
-                // Render tasks view when navigated to
-                setTimeout(() => {
-                    const contentArea = document.querySelector('#tasksView');
-                    if (contentArea) {
-                        this.tasksView.render(contentArea);
-                    }
-                }, 100);
-            }
-        });
-        
-        console.log('🔗 Module communication established');
-    }
-
-    startSystemMonitoring() {
-        // Monitor system health
-        this.healthCheckInterval = setInterval(() => {
-            this.performHealthCheck();
-        }, 30000); // Every 30 seconds
-        
-        // Monitor memory usage
-        this.memoryCheckInterval = setInterval(() => {
-            this.checkMemoryUsage();
-        }, 10000); // Every 10 seconds
-        
-        // Monitor performance
-        this.performanceCheckInterval = setInterval(() => {
-            this.checkPerformance();
-        }, 5000); // Every 5 seconds
-        
-        console.log('📊 System monitoring started');
-    }
-
-    async finalizeInitialization() {
-        // Load saved UI state
-        this.loadSavedUIState();
-        
-        // Set up periodic cleanup
-        this.cleanupInterval = setInterval(() => {
-            this.performCleanup();
-        }, 60000); // Every minute
-        
-        // Mark app as ready
-        stateManager.setState('app.ready', true);
-        stateManager.setState('app.version', this.version);
-        stateManager.setState('app.initialized', Date.now());
-        
-        // Hide any remaining loading indicators
-        document.body.classList.add('app-ready');
-    }
-
+    
     setupGlobalErrorHandling() {
         // Handle uncaught errors
         window.addEventListener('error', (event) => {
-            console.error('Uncaught error:', event.error);
-            this.handleAppError({
+            console.error('🚨 Global error:', event.error);
+            this.performanceMetrics.errorCount++;
+            
+            // Emit error event for handling
+            eventBus.emit('app:error', {
                 error: event.error,
-                source: 'window.error',
                 filename: event.filename,
                 lineno: event.lineno,
                 colno: event.colno
@@ -339,297 +265,199 @@ class AgentNeoApp {
         
         // Handle unhandled promise rejections
         window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-            this.handleAppError({
-                error: event.reason,
-                source: 'unhandledrejection'
+            console.error('🚨 Unhandled promise rejection:', event.reason);
+            this.performanceMetrics.errorCount++;
+            
+            // Emit error event for handling
+            eventBus.emit('app:unhandled-rejection', {
+                reason: event.reason,
+                promise: event.promise
             });
         });
-        
-        // Handle service worker errors
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.addEventListener('error', (event) => {
-                console.error('Service Worker error:', event);
-                this.handleAppError({
-                    error: event,
-                    source: 'serviceWorker'
-                });
-            });
-        }
-        
-        console.log('🛡️ Global error handling set up');
     }
-
-    performHealthCheck() {
-        const status = {
-            timestamp: Date.now(),
-            eventBus: eventBus.getMetrics(),
-            stateManager: stateManager.getMetrics(),
-            agentNeo: agentNeo.getStatus(),
-            memory: this.getMemoryInfo(),
-            performance: this.getPerformanceInfo()
+    
+    setupErrorHandler() {
+        return {
+            handleError: (error, context = 'unknown') => {
+                console.error(`🚨 Error in ${context}:`, error);
+                this.performanceMetrics.errorCount++;
+                
+                // Emit error event
+                eventBus.emit('app:error', { error, context });
+                
+                // Try to recover if possible
+                this.attemptRecovery(error, context);
+            },
+            
+            handleWarning: (warning, context = 'unknown') => {
+                console.warn(`⚠️ Warning in ${context}:`, warning);
+                this.performanceMetrics.warningCount++;
+                
+                // Emit warning event
+                eventBus.emit('app:warning', { warning, context });
+            }
         };
-        
-        // Check for issues
-        const issues = [];
-        
-        if (status.eventBus.errorCount > 10) {
-            issues.push('High event bus error count');
-        }
-        
-        if (status.memory.usedJSHeapSize > 100 * 1024 * 1024) { // 100MB
-            issues.push('High memory usage');
-        }
-        
-        if (status.performance.responseTime > 5000) {
-            issues.push('Slow response times');
-        }
-        
-        stateManager.setState('system.health', {
-            status: issues.length === 0 ? 'healthy' : 'warning',
-            issues,
-            lastCheck: status.timestamp
-        });
-        
-        if (issues.length > 0) {
-            console.warn('⚠️ Health check issues:', issues);
-            eventBus.emit('system:health:warning', { issues });
+    }
+    
+    attemptRecovery(error, context) {
+        // Basic recovery strategies
+        switch (context) {
+            case 'module-initialization':
+                console.log('🔄 Attempting to reinitialize failed module...');
+                // Could implement module reinitialization logic here
+                break;
+                
+            case 'ui-rendering':
+                console.log('🔄 Attempting to refresh UI...');
+                // Could implement UI refresh logic here
+                break;
+                
+            default:
+                console.log('🔄 No specific recovery strategy for context:', context);
         }
     }
-
-    checkMemoryUsage() {
-        const memInfo = this.getMemoryInfo();
-        if (memInfo.usedJSHeapSize) {
-            const usagePercent = (memInfo.usedJSHeapSize / memInfo.totalJSHeapSize) * 100;
-            stateManager.setState('resources.memory', Math.round(usagePercent));
+    
+    isCriticalModule(moduleName) {
+        const criticalModules = [
+            'EnhancedSettingsManager',
+            'IPFSModule',
+            'DataResourceManager',
+            'AIModuleManager'
+        ];
+        
+        return criticalModules.includes(moduleName);
+    }
+    
+    setupPerformanceMonitoring() {
+        // Monitor performance metrics
+        setInterval(() => {
+            const metrics = this.getPerformanceMetrics();
             
-            if (usagePercent > 80) {
-                console.warn('⚠️ High memory usage:', usagePercent + '%');
-                eventBus.emit('resources:memory:high', { usage: usagePercent });
-            }
-        }
-    }
-
-    checkPerformance() {
-        const navigation = performance.getEntriesByType('navigation')[0];
-        if (navigation) {
-            const metrics = {
-                loadTime: navigation.loadEventEnd - navigation.loadEventStart,
-                domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-                firstPaint: this.getFirstPaintTime(),
-                responseTime: stateManager.getState('performance.avgResponseTime', 0)
-            };
+            // Update state manager with metrics
+            stateManager.setState('performance', metrics);
             
-            stateManager.setState('performance.metrics', metrics);
-        }
-    }
-
-    performCleanup() {
-        // Clean up old event history
-        eventBus.clearHistory();
-        
-        // Clean up old state history
-        const history = stateManager.getHistory();
-        if (history.length > 100) {
-            stateManager.reset();
-        }
-        
-        // Clean up performance entries
-        if (performance.getEntries().length > 1000) {
-            performance.clearResourceTimings();
-        }
-    }
-
-    loadSavedUIState() {
-        try {
-            // Load theme preference
-            const savedTheme = localStorage.getItem('agentneo_ui_theme');
-            if (savedTheme) {
-                stateManager.setState('ui.theme', JSON.parse(savedTheme));
-            }
+            // Emit performance update
+            eventBus.emit('app:performance-update', metrics);
             
-            // Load other UI preferences
-            const savedView = localStorage.getItem('agentneo_ui_currentView');
-            if (savedView) {
-                stateManager.setState('ui.currentView', JSON.parse(savedView));
-            }
-            
-        } catch (error) {
-            console.warn('Failed to load saved UI state:', error);
-        }
+        }, 30000); // Every 30 seconds
+        
+        console.log('📊 Performance monitoring setup complete');
     }
-
-    updateLoadingProgress(message, percent) {
-        const progressElement = document.querySelector('.loading-progress');
-        const messageElement = document.querySelector('.loading-message');
-        
-        if (progressElement) {
-            progressElement.style.width = percent + '%';
-        }
-        
-        if (messageElement) {
-            messageElement.textContent = message;
-        }
-        
-        stateManager.setState('app.loading', { message, percent });
-    }
-
-    handleInitializationError(error) {
-        const errorElement = document.querySelector('.loading-content');
-        if (errorElement) {
-            errorElement.innerHTML = `
-                <div class="error-message">
-                    <h2>🚨 Initialization Failed</h2>
-                    <p>Agent Neo failed to start properly.</p>
-                    <p><strong>Error:</strong> ${error.message}</p>
-                    <button onclick="location.reload()" class="btn btn-primary">
-                        <span class="btn-icon">🔄</span>
-                        <span class="btn-text">Retry</span>
-                    </button>
-                </div>
-            `;
-        }
-        
-        stateManager.setState('app.error', {
-            message: error.message,
-            stack: error.stack,
-            timestamp: Date.now()
-        });
-    }
-
-    handleAppError({ error, source, context }) {
-        console.error(`🚨 Application error [${source}]:`, error);
-        
-        const errorInfo = {
-            message: error.message || error,
-            source,
-            context,
-            timestamp: Date.now(),
-            stack: error.stack
+    
+    getPerformanceMetrics() {
+        return {
+            ...this.performanceMetrics,
+            uptime: Date.now() - this.startTime,
+            memoryUsage: this.getMemoryUsage(),
+            moduleCount: this.modules.size,
+            initialized: this.initialized
         };
-        
-        stateManager.setState('system.lastError', errorInfo);
-        
-        // Emit error event for other modules to handle
-        eventBus.emit('app:error', errorInfo);
-        
-        // Show user notification for critical errors
-        if (source === 'critical') {
-            this.showErrorNotification(error.message);
-        }
     }
-
-    showErrorNotification(message) {
-        if (uiManager && typeof uiManager.showNotification === 'function') {
-            uiManager.showNotification(`Error: ${message}`, 'error');
-        }
-    }
-
-    async restart() {
-        console.log('🔄 Restarting Agent Neo...');
-        
-        try {
-            await this.shutdown();
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
-        } catch (error) {
-            console.error('Error during restart:', error);
-            location.reload(); // Force reload on error
-        }
-    }
-
-    async shutdown() {
-        console.log('🛑 Shutting down Agent Neo...');
-        
-        try {
-            // Clear intervals
-            if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
-            if (this.memoryCheckInterval) clearInterval(this.memoryCheckInterval);
-            if (this.performanceCheckInterval) clearInterval(this.performanceCheckInterval);
-            if (this.cleanupInterval) clearInterval(this.cleanupInterval);
-            
-            // Stop Agent Neo
-            if (agentNeo) {
-                await agentNeo.stop();
-            }
-            
-            // Save current state
-            this.saveCurrentState();
-            
-            // Clean up modules
-            if (uiManager && typeof uiManager.destroy === 'function') {
-                uiManager.destroy();
-            }
-            
-            eventBus.emit('app:shutdown', { timestamp: Date.now() });
-            
-            console.log('✅ Agent Neo shutdown complete');
-            
-        } catch (error) {
-            console.error('Error during shutdown:', error);
-        }
-    }
-
-    saveCurrentState() {
-        try {
-            const currentState = {
-                theme: stateManager.getState('ui.theme'),
-                view: stateManager.getState('ui.currentView'),
-                settings: stateManager.getState('settings'),
-                timestamp: Date.now()
-            };
-            
-            localStorage.setItem('agentneo_saved_state', JSON.stringify(currentState));
-        } catch (error) {
-            console.warn('Failed to save current state:', error);
-        }
-    }
-
-    getMemoryInfo() {
+    
+    getMemoryUsage() {
         if (performance.memory) {
             return {
-                usedJSHeapSize: performance.memory.usedJSHeapSize,
-                totalJSHeapSize: performance.memory.totalJSHeapSize,
-                jsHeapSizeLimit: performance.memory.jsHeapSizeLimit
+                used: performance.memory.usedJSHeapSize,
+                total: performance.memory.totalJSHeapSize,
+                limit: performance.memory.jsHeapSizeLimit
             };
         }
-        return {};
+        return null;
     }
-
-    getPerformanceInfo() {
-        const navigation = performance.getEntriesByType('navigation')[0];
-        return {
-            loadTime: navigation ? navigation.loadEventEnd - navigation.loadEventStart : 0,
-            responseTime: stateManager.getState('performance.avgResponseTime', 0)
-        };
+    
+    handleInitializationError(error) {
+        console.error('🚨 Initialization failed:', error);
+        
+        // Show error UI
+        document.body.innerHTML = `
+            <div style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                background: #1a1a1a;
+                color: #ff6b6b;
+                font-family: monospace;
+                text-align: center;
+            ">
+                <div>
+                    <h1>⚠️ Agent Neo Initialization Failed</h1>
+                    <p>Error: ${error.message}</p>
+                    <button onclick="location.reload()" style="
+                        background: #ff6b6b;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        margin-top: 20px;
+                        cursor: pointer;
+                        border-radius: 5px;
+                    ">
+                        Reload Application
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Emit initialization error event
+        eventBus.emit('app:initialization-error', { error });
     }
-
-    getFirstPaintTime() {
-        const paintEntries = performance.getEntriesByType('paint');
-        const firstPaint = paintEntries.find(entry => entry.name === 'first-paint');
-        return firstPaint ? firstPaint.startTime : 0;
+    
+    // Public API methods
+    getModule(name) {
+        return this.modules.get(name);
     }
-
-    isDebugMode() {
-        return location.hostname === 'localhost' || 
-               location.search.includes('debug=true') ||
-               localStorage.getItem('agentneo_debug') === 'true';
+    
+    getAllModules() {
+        return Array.from(this.modules.entries());
     }
-
-    getStatus() {
+    
+    getApplicationStatus() {
         return {
             version: this.version,
             initialized: this.initialized,
             uptime: Date.now() - this.startTime,
-            modules: Array.from(this.modules.keys()),
-            health: stateManager.getState('system.health'),
-            metrics: {
-                eventBus: eventBus.getMetrics(),
-                stateManager: stateManager.getMetrics(),
-                memory: this.getMemoryInfo(),
-                performance: this.getPerformanceInfo()
+            modules: this.modules.size,
+            performance: this.getPerformanceMetrics()
+        };
+    }
+    
+    async shutdown() {
+        console.log('🛑 Shutting down Agent Neo Application...');
+        
+        // Shutdown all modules
+        for (const [name, instance] of this.modules) {
+            try {
+                if (instance && typeof instance.shutdown === 'function') {
+                    await instance.shutdown();
+                    console.log(`✅ ${name} shut down successfully`);
+                }
+            } catch (error) {
+                console.error(`❌ Failed to shut down ${name}:`, error);
             }
+        }
+        
+        // Shutdown core systems
+        await agentNeo.shutdown();
+        
+        // Unregister service worker
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        
+        console.log('✅ Agent Neo Application shut down complete');
+    }
+    
+    // Development and debugging methods
+    debug() {
+        return {
+            version: this.version,
+            modules: Array.from(this.modules.keys()),
+            performance: this.getPerformanceMetrics(),
+            state: stateManager.getState(),
+            eventBus: eventBus.getEventCount?.() || 'Not available'
         };
     }
 }
@@ -637,38 +465,23 @@ class AgentNeoApp {
 // Initialize the application
 const app = new AgentNeoApp();
 
-// Make it available globally for debugging
+// Make available globally for debugging
 if (typeof window !== 'undefined') {
     window.AgentNeoApp = app;
+    window.AgentNeo = agentNeo;
+    window.eventBus = eventBus;
+    window.stateManager = stateManager;
     
-    // Add debug helpers
-    window.AgentNeoDebug = {
-        eventBus,
-        stateManager,
-        agentNeo,
-        uiManager,
-        app,
-        getStatus: () => app.getStatus(),
-        restart: () => app.restart(),
-        shutdown: () => app.shutdown()
-    };
+    // Global debug function
+    window.debug = () => app.debug();
 }
-
-// Handle page visibility changes
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        console.log('📱 App hidden - reducing activity');
-        eventBus.emit('app:background');
-    } else {
-        console.log('📱 App visible - resuming activity');
-        eventBus.emit('app:foreground');
-    }
-});
 
 // Handle page unload
 window.addEventListener('beforeunload', () => {
-    app.saveCurrentState();
+    if (app.initialized) {
+        app.shutdown();
+    }
 });
 
-console.log('🎯 Agent Neo main module loaded');
+// Export for module usage
 export default app;
