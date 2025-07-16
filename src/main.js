@@ -27,6 +27,11 @@ import settings from './ui/components/Settings.js';
 import TaskAuctionSystem from './modules/TaskAuctionSystem.js';
 import SessionContextModule from './modules/SessionContextModule.js';
 import IPFSModule from './modules/IPFSModule.js';
+import TaskManager from './modules/TaskManager.js';
+import VoiceInterface from './modules/VoiceInterface.js';
+
+// Import new UI components
+import TasksView from './ui/components/TasksView.js';
 
 class AgentNeoApp {
     constructor() {
@@ -40,6 +45,11 @@ class AgentNeoApp {
         this.taskAuctionSystem = new TaskAuctionSystem();
         this.sessionContext = new SessionContextModule();
         this.ipfsModule = new IPFSModule();
+        this.taskManager = new TaskManager();
+        this.voiceInterface = new VoiceInterface();
+        
+        // Initialize UI components
+        this.tasksView = new TasksView();
         
         this.init();
     }
@@ -234,6 +244,33 @@ class AgentNeoApp {
                 localStorage.setItem(`agentneo_ui_${key}`, JSON.stringify(value));
             } catch (error) {
                 console.warn('Failed to save UI state:', error);
+            }
+        });
+        
+        // Chat response integration with voice
+        eventBus.on('chat:response', ({ response, sessionId, inputMethod }) => {
+            if (inputMethod === 'voice' && this.voiceInterface) {
+                this.voiceInterface.speak(response);
+            }
+        });
+        
+        // Voice button integration
+        eventBus.on('ui:voice-button-clicked', () => {
+            if (this.voiceInterface) {
+                this.voiceInterface.toggleListening();
+            }
+        });
+        
+        // Task view integration
+        eventBus.on('ui:navigate', ({ view }) => {
+            if (view === 'tasks' && this.tasksView) {
+                // Render tasks view when navigated to
+                setTimeout(() => {
+                    const contentArea = document.querySelector('#tasksView');
+                    if (contentArea) {
+                        this.tasksView.render(contentArea);
+                    }
+                }, 100);
             }
         });
         
