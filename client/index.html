@@ -2,17 +2,393 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
     <title>Agent Neo - Decentralized AI Agent DApp</title>
     <meta name="description" content="Agent Neo - A self-evolving, decentralized AI agent DApp with ethics-driven task processing and P2P network connectivity" />
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0F172A">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/styles/main.css">
+    <link rel="stylesheet" href="/src/styles/components.css">
+    <link rel="stylesheet" href="/src/styles/themes.css">
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+    <!-- Main Application Container -->
+    <div id="app" class="app">
+      <!-- Header with controls -->
+      <header class="app__header">
+        <div class="header__brand">
+          <h1 class="header__title">Agent Neo</h1>
+          <div class="header__status" id="nodeStatus">
+            <span class="status__indicator status__indicator--offline"></span>
+            <span class="status__text">Offline</span>
+          </div>
+        </div>
+        <nav class="header__nav">
+          <button class="btn btn--primary" id="toggleNode">Start Node</button>
+          <button class="btn btn--secondary" id="settingsBtn">Settings</button>
+        </nav>
+      </header>
+
+      <!-- Main Content Area -->
+      <main class="app__main">
+        <!-- Sidebar with navigation and metrics -->
+        <aside class="sidebar" id="sidebar">
+          <nav class="sidebar__nav">
+            <button class="nav__item nav__item--active" data-view="dashboard">
+              <span class="nav__icon">📊</span>
+              Dashboard
+            </button>
+            <button class="nav__item" data-view="chat">
+              <span class="nav__icon">💬</span>
+              Chat
+            </button>
+            <button class="nav__item" data-view="tasks">
+              <span class="nav__icon">📋</span>
+              Tasks
+            </button>
+            <button class="nav__item" data-view="network">
+              <span class="nav__icon">🌐</span>
+              Network
+            </button>
+            <button class="nav__item" data-view="knowledge">
+              <span class="nav__icon">🧠</span>
+              Knowledge
+            </button>
+            <button class="nav__item" data-view="modules">
+              <span class="nav__icon">🔧</span>
+              Modules
+            </button>
+          </nav>
+
+          <!-- Local Metrics Panel -->
+          <div class="metrics">
+            <h3 class="metrics__title">Local Metrics</h3>
+            <div class="metric">
+              <span class="metric__label">CPU Usage</span>
+              <div class="metric__bar">
+                <div class="metric__fill" id="cpuUsage" style="width: 0%"></div>
+              </div>
+              <span class="metric__value" id="cpuValue">0%</span>
+            </div>
+            <div class="metric">
+              <span class="metric__label">Memory</span>
+              <div class="metric__bar">
+                <div class="metric__fill" id="memoryUsage" style="width: 0%"></div>
+              </div>
+              <span class="metric__value" id="memoryValue">0MB</span>
+            </div>
+            <div class="metric">
+              <span class="metric__label">Trust Balance</span>
+              <span class="metric__value" id="trustBalance">1000</span>
+            </div>
+            <div class="metric">
+              <span class="metric__label">Reputation</span>
+              <span class="metric__value" id="reputation">100</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="content" id="contentArea">
+          <!-- Dashboard View (Default) -->
+          <div class="view view--active" id="dashboardView">
+            <h2 class="view__title">Agent Neo Dashboard</h2>
+            
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+              <button class="action-card" id="newSessionBtn">
+                <span class="action-card__icon">➕</span>
+                <span class="action-card__title">New Session</span>
+                <span class="action-card__desc">Start a new project session</span>
+              </button>
+              <button class="action-card" id="askQuestionBtn">
+                <span class="action-card__icon">❓</span>
+                <span class="action-card__title">Ask Question</span>
+                <span class="action-card__desc">Get help or information</span>
+              </button>
+              <button class="action-card" id="learnModeBtn">
+                <span class="action-card__icon">🎓</span>
+                <span class="action-card__title">Learning Mode</span>
+                <span class="action-card__desc">Teach Agent Neo something new</span>
+              </button>
+            </div>
+
+            <!-- Network Status -->
+            <div class="network-status">
+              <h3>Network Status</h3>
+              <div class="status-grid">
+                <div class="status-item">
+                  <span class="status-label">Connected Peers</span>
+                  <span class="status-value" id="connectedPeers">0</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Active Tasks</span>
+                  <span class="status-value" id="activeTasks">0</span>
+                </div>
+                <div class="status-item">
+                  <span class="status-label">Network Health</span>
+                  <span class="status-value" id="networkHealth">Good</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Session Context -->
+            <div class="session-context" id="sessionContext" style="display: none;">
+              <h3>Current Session</h3>
+              <div class="context-info">
+                <div class="context-goal">
+                  <label>Goal:</label>
+                  <span id="sessionGoal">No active session</span>
+                  <button class="btn btn--small" id="resetGoalBtn">Reset</button>
+                </div>
+                <div class="context-history">
+                  <label>Messages:</label>
+                  <span id="sessionMessages">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat View -->
+          <div class="view" id="chatView">
+            <div class="chat-container">
+              <div class="chat-header">
+                <h2>Chat with Agent Neo</h2>
+                <div class="chat-controls">
+                  <button class="btn btn--small" id="voiceToggle">🎤 Voice</button>
+                  <button class="btn btn--small" id="clearChat">Clear</button>
+                </div>
+              </div>
+              <div class="chat-messages" id="chatMessages">
+                <div class="message message--system">
+                  <div class="message__content">
+                    Hello! I'm Agent Neo, your decentralized AI assistant. How can I help you today?
+                  </div>
+                  <div class="message__timestamp">Just now</div>
+                </div>
+              </div>
+              <div class="chat-input">
+                <textarea id="chatInput" placeholder="Type your message or question here..." rows="3"></textarea>
+                <button class="btn btn--primary" id="sendMessage">Send</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tasks View -->
+          <div class="view" id="tasksView">
+            <h2 class="view__title">Task Management</h2>
+            <div class="tasks-container">
+              <div class="task-filters">
+                <button class="filter-btn filter-btn--active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="active">Active</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+                <button class="filter-btn" data-filter="failed">Failed</button>
+              </div>
+              <div class="tasks-list" id="tasksList">
+                <!-- Tasks will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Network View -->
+          <div class="view" id="networkView">
+            <h2 class="view__title">Network Overview</h2>
+            <div class="network-grid">
+              <div class="network-card">
+                <h3>Peer Connections</h3>
+                <div class="peer-list" id="peerList">
+                  <!-- Peers will be populated dynamically -->
+                </div>
+              </div>
+              <div class="network-card">
+                <h3>Protocol Status</h3>
+                <div class="protocol-list" id="protocolList">
+                  <!-- Protocols will be populated dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Knowledge View -->
+          <div class="view" id="knowledgeView">
+            <h2 class="view__title">Knowledge Graph</h2>
+            <div class="knowledge-container">
+              <div class="knowledge-search">
+                <input type="text" id="knowledgeSearch" placeholder="Search knowledge base...">
+                <button class="btn btn--primary">Search</button>
+              </div>
+              <div class="knowledge-stats">
+                <div class="stat">
+                  <span class="stat__label">Total Facts</span>
+                  <span class="stat__value" id="totalFacts">0</span>
+                </div>
+                <div class="stat">
+                  <span class="stat__label">Hot Knowledge</span>
+                  <span class="stat__value" id="hotKnowledge">0</span>
+                </div>
+                <div class="stat">
+                  <span class="stat__label">Core Principles</span>
+                  <span class="stat__value" id="corePrinciples">12</span>
+                </div>
+              </div>
+              <div class="knowledge-graph" id="knowledgeGraph">
+                <!-- Knowledge visualization will go here -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Modules View -->
+          <div class="view" id="modulesView">
+            <h2 class="view__title">Agent Modules</h2>
+            <div class="modules-container">
+              <div class="module-actions">
+                <button class="btn btn--primary" id="scanModules">Scan for Modules</button>
+                <button class="btn btn--secondary" id="createModule">Create Module</button>
+              </div>
+              <div class="modules-grid" id="modulesGrid">
+                <!-- Modules will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+      <div class="modal__backdrop"></div>
+      <div class="modal__content">
+        <div class="modal__header">
+          <h2>Agent Neo Settings</h2>
+          <button class="modal__close" id="closeSettings">&times;</button>
+        </div>
+        <div class="modal__body">
+          <div class="settings-tabs">
+            <button class="tab tab--active" data-tab="general">General</button>
+            <button class="tab" data-tab="resources">Resources</button>
+            <button class="tab" data-tab="network">Network</button>
+            <button class="tab" data-tab="ethics">Ethics</button>
+          </div>
+          
+          <div class="tab-content tab-content--active" id="generalTab">
+            <div class="setting">
+              <label for="nodeName">Node Name</label>
+              <input type="text" id="nodeName" value="Agent Neo Node">
+            </div>
+            <div class="setting">
+              <label for="autoStart">Auto-start on load</label>
+              <input type="checkbox" id="autoStart">
+            </div>
+            <div class="setting">
+              <label for="voiceEnabled">Enable voice interaction</label>
+              <input type="checkbox" id="voiceEnabled" checked>
+            </div>
+          </div>
+
+          <div class="tab-content" id="resourcesTab">
+            <div class="setting">
+              <label for="maxCpuUsage">Max CPU Usage (%)</label>
+              <input type="range" id="maxCpuUsage" min="10" max="90" value="70">
+              <span class="range-value">70%</span>
+            </div>
+            <div class="setting">
+              <label for="maxMemoryUsage">Max Memory Usage (MB)</label>
+              <input type="range" id="maxMemoryUsage" min="100" max="2000" value="512">
+              <span class="range-value">512MB</span>
+            </div>
+            <div class="setting">
+              <label for="metabolicRate">Metabolic Rate Limit</label>
+              <input type="range" id="metabolicRate" min="1" max="10" value="5">
+              <span class="range-value">5</span>
+            </div>
+          </div>
+
+          <div class="tab-content" id="networkTab">
+            <div class="setting">
+              <label for="maxPeers">Max Peer Connections</label>
+              <input type="number" id="maxPeers" value="20" min="5" max="100">
+            </div>
+            <div class="setting">
+              <label for="relayMode">Enable Relay Mode</label>
+              <input type="checkbox" id="relayMode">
+            </div>
+            <div class="setting">
+              <label for="bootstrapNodes">Bootstrap Nodes</label>
+              <textarea id="bootstrapNodes" rows="3" placeholder="Enter bootstrap node addresses..."></textarea>
+            </div>
+          </div>
+
+          <div class="tab-content" id="ethicsTab">
+            <div class="setting">
+              <label for="ethicsLevel">Ethics Sensitivity</label>
+              <input type="range" id="ethicsLevel" min="1" max="10" value="8">
+              <span class="range-value">High</span>
+            </div>
+            <div class="setting">
+              <label for="homeostasisMode">Homeostasis Mode</label>
+              <select id="homeostasisMode">
+                <option value="strict">Strict</option>
+                <option value="balanced" selected>Balanced</option>
+                <option value="permissive">Permissive</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal__footer">
+          <button class="btn btn--secondary" id="resetSettings">Reset to Defaults</button>
+          <button class="btn btn--primary" id="saveSettings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Initializing Agent Neo...</div>
+    </div>
+
+    <!-- Error Toast -->
+    <div class="toast toast--error" id="errorToast">
+      <div class="toast__content">
+        <span class="toast__message" id="errorMessage"></span>
+        <button class="toast__close" id="closeError">&times;</button>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div class="toast toast--success" id="successToast">
+      <div class="toast__content">
+        <span class="toast__message" id="successMessage"></span>
+        <button class="toast__close" id="closeSuccess">&times;</button>
+      </div>
+    </div>
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(error => console.log('SW registration failed'));
+        });
+      }
+    </script>
+
+    <!-- Main Application Scripts -->
+    <script type="module" src="/src/core/StateManager.js"></script>
+    <script type="module" src="/src/core/EventBus.js"></script>
+    <script type="module" src="/src/core/ComponentRenderer.js"></script>
+    <script type="module" src="/src/core/ResourceManager.js"></script>
+    <script type="module" src="/src/modules/EthicsModule.js"></script>
+    <script type="module" src="/src/modules/ProprioceptionModule.js"></script>
+    <script type="module" src="/src/modules/PlannerModule.js"></script>
+    <script type="module" src="/src/modules/KnowledgeGraph.js"></script>
+    <script type="module" src="/src/network/P2PNetwork.js"></script>
+    <script type="module" src="/src/storage/LocalStorage.js"></script>
+    <script type="module" src="/src/ui/UIController.js"></script>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
