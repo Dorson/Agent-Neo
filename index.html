@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Neo - Decentralized AI Agent DApp</title>
+    <meta name="description" content="Agent Neo - A self-evolving, decentralized AI agent DApp with ethics-driven task processing and P2P network connectivity">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="src/styles/reset.css">
+    <link rel="stylesheet" href="src/styles/variables.css">
+    <link rel="stylesheet" href="src/styles/components.css">
+    <link rel="stylesheet" href="src/styles/themes.css">
+    <link rel="stylesheet" href="src/styles/notifications.css">
+    <link rel="stylesheet" href="src/styles/main.css">
+    
+    <!-- Core Scripts -->
+    <script type="module" src="src/core/AgentNeo.js"></script>
+    <script type="module" src="src/core/EventBus.js"></script>
+    <script type="module" src="src/core/StateManager.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="neo-logo">
+                <div class="logo-ring"></div>
+                <div class="logo-core"></div>
+            </div>
+            <h1>Agent Neo</h1>
+            <p>Initializing Decentralized Intelligence...</p>
+            <p class="loading-message">Starting up...</p>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="app hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="neo-icon">
+                    <div class="icon-ring"></div>
+                    <div class="icon-core"></div>
+                </div>
+                <h1>Agent Neo</h1>
+                <div class="node-status" id="nodeStatus">
+                    <span class="status-indicator offline"></span>
+                    <span class="status-text">Offline</span>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <button class="btn btn-primary" id="toggleNodeBtn">
+                    <span class="btn-icon">⚡</span>
+                    <span class="btn-text">Start Node</span>
+                </button>
+                <button class="btn btn-secondary" id="settingsBtn">
+                    <span class="btn-icon">⚙️</span>
+                    <span class="btn-text">Settings</span>
+                </button>
+                <button class="btn btn-secondary" id="themeToggle">
+                    <span class="btn-icon">🌓</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <nav class="sidebar-nav">
+                    <button class="nav-item active" data-view="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Dashboard</span>
+                    </button>
+                    <button class="nav-item" data-view="chat">
+                        <span class="nav-icon">💬</span>
+                        <span class="nav-text">Chat</span>
+                    </button>
+                    <button class="nav-item" data-view="tasks">
+                        <span class="nav-icon">📋</span>
+                        <span class="nav-text">Tasks</span>
+                    </button>
+                    <button class="nav-item" data-view="modules">
+                        <span class="nav-icon">🧩</span>
+                        <span class="nav-text">Modules</span>
+                    </button>
+                    <button class="nav-item" data-view="network">
+                        <span class="nav-icon">🌐</span>
+                        <span class="nav-text">Network</span>
+                    </button>
+                    <button class="nav-item" data-view="knowledge">
+                        <span class="nav-icon">🧠</span>
+                        <span class="nav-text">Knowledge</span>
+                    </button>
+                    <button class="nav-item" data-view="ethics">
+                        <span class="nav-icon">⚖️</span>
+                        <span class="nav-text">Ethics</span>
+                    </button>
+                </nav>
+
+                <!-- Resource Monitor -->
+                <div class="resource-monitor">
+                    <h3>Resource Monitor</h3>
+                    <div class="metric">
+                        <span class="metric-label">CPU Usage</span>
+                        <div class="metric-bar">
+                            <div class="metric-fill" id="cpuUsage" style="width: 0%"></div>
+                        </div>
+                        <span class="metric-value" id="cpuValue">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Memory</span>
+                        <div class="metric-bar">
+                            <div class="metric-fill" id="memoryUsage" style="width: 0%"></div>
+                        </div>
+                        <span class="metric-value" id="memoryValue">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Trust Balance</span>
+                        <span class="metric-value" id="trustBalance">100</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Reputation</span>
+                        <span class="metric-value" id="reputation">0</span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="content" id="contentArea">
+                <!-- Dashboard View -->
+                <div id="dashboardView" class="view active">
+                    <div class="view-header">
+                        <h2>Dashboard</h2>
+                        <p>Monitor your Agent Neo instance and network status</p>
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <!-- Node Status Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Node Status</h3>
+                                <span class="status-badge" id="nodeStatusBadge">Offline</span>
+                            </div>
+                            <div class="card-content">
+                                <div class="status-grid">
+                                    <div class="status-item">
+                                        <span class="status-label">P2P Connections</span>
+                                        <span class="status-value" id="p2pConnections">0</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">IPFS Node</span>
+                                        <span class="status-value" id="ipfsStatus">Disconnected</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-label">Uptime</span>
+                                        <span class="status-value" id="uptime">0h 0m</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Performance Metrics</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="metrics-grid">
+                                    <div class="metric-item">
+                                        <span class="metric-label">Tasks Completed</span>
+                                        <span class="metric-value" id="tasksCompleted">0</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Success Rate</span>
+                                        <span class="metric-value" id="successRate">0%</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Avg Response Time</span>
+                                        <span class="metric-value" id="avgResponseTime">0ms</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-label">Metabolic Load</span>
+                                        <span class="metric-value" id="metabolicLoad">Low</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network Activity -->
+                        <div class="card card-wide">
+                            <div class="card-header">
+                                <h3>Network Activity</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="activity-log" id="activityLog">
+                                    <div class="activity-item">
+                                        <span class="activity-time">Starting up...</span>
+                                        <span class="activity-text">Agent Neo initializing</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat View -->
+                <div id="chatView" class="view">
+                    <div class="view-header">
+                        <h2>Conversational Interface</h2>
+                        <p>Interact with Agent Neo using natural language</p>
+                    </div>
+                    
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message agent-message">
+                                <div class="message-avatar">🤖</div>
+                                <div class="message-content">
+                                    <p>Hello! I'm Agent Neo. I'm ready to help you with tasks while respecting ethical boundaries and resource limits. What would you like me to help you with today?</p>
+                                </div>
+                                <div class="message-time">Just now</div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-container">
+                            <div class="input-group">
+                                <input type="text" id="chatInput" class="chat-input" placeholder="Type your message or ask a question...">
+                                <button class="btn btn-primary" id="sendBtn">
+                                    <span class="btn-icon">📤</span>
+                                </button>
+                                <button class="btn btn-secondary" id="voiceBtn">
+                                    <span class="btn-icon">🎤</span>
+                                </button>
+                            </div>
+                            <div class="input-controls">
+                                <button class="btn btn-small" id="pauseTaskBtn" disabled>
+                                    <span class="btn-icon">⏸️</span>
+                                    <span class="btn-text">Pause Task</span>
+                                </button>
+                                <button class="btn btn-small" id="resumeTaskBtn" disabled>
+                                    <span class="btn-icon">▶️</span>
+                                    <span class="btn-text">Resume Task</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other views will be populated by JavaScript -->
+                <div id="tasksView" class="view">
+                    <div class="view-header">
+                        <h2>Task Management</h2>
+                        <p>Monitor and manage active and completed tasks</p>
+                    </div>
+                    <div class="placeholder">Task management interface will be loaded here...</div>
+                </div>
+
+                <div id="modulesView" class="view">
+                    <div class="view-header">
+                        <h2>Module Ecosystem</h2>
+                        <p>View and manage AI modules in the hive mind</p>
+                    </div>
+                    <div class="placeholder">Module management interface will be loaded here...</div>
+                </div>
+
+                <div id="networkView" class="view">
+                    <div class="view-header">
+                        <h2>P2P Network</h2>
+                        <p>Monitor peer connections and network health</p>
+                    </div>
+                    <div class="placeholder">Network monitoring interface will be loaded here...</div>
+                </div>
+
+                <div id="knowledgeView" class="view">
+                    <div class="view-header">
+                        <h2>Knowledge Graph</h2>
+                        <p>Explore the distributed knowledge base</p>
+                    </div>
+                    <div class="placeholder">Knowledge graph interface will be loaded here...</div>
+                </div>
+
+                <div id="ethicsView" class="view">
+                    <div class="view-header">
+                        <h2>Ethics Monitor</h2>
+                        <p>Constitutional AI and ethical decision tracking</p>
+                    </div>
+                    <div class="placeholder">Ethics monitoring interface will be loaded here...</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-overlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button class="modal-close" id="closeSettings">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h4>Resource Limits</h4>
+                        <div class="setting-item">
+                            <label for="maxCpuUsage">Max CPU Usage (%)</label>
+                            <input type="range" id="maxCpuUsage" min="10" max="90" value="50">
+                            <span id="maxCpuValue">50%</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="maxMemoryUsage">Max Memory Usage (%)</label>
+                            <input type="range" id="maxMemoryUsage" min="10" max="80" value="40">
+                            <span id="maxMemoryValue">40%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>Network Configuration</h4>
+                        <div class="setting-item">
+                            <label for="maxPeers">Max P2P Connections</label>
+                            <input type="number" id="maxPeers" min="1" max="100" value="10">
+                        </div>
+                        <div class="setting-item">
+                            <label>
+                                <input type="checkbox" id="enableVoice" checked>
+                                Enable Voice Interface
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>Ethics Configuration</h4>
+                        <div class="setting-item">
+                            <label for="ethicsLevel">Ethics Strictness</label>
+                            <select id="ethicsLevel">
+                                <option value="permissive">Permissive</option>
+                                <option value="balanced" selected>Balanced</option>
+                                <option value="strict">Strict</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="resetSettings">Reset to Defaults</button>
+                    <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Module Scripts -->
+    <script type="module" src="src/ui/UIManager.js"></script>
+    <script type="module" src="src/ui/components/Dashboard.js"></script>
+    <script type="module" src="src/ui/components/Chat.js"></script>
+    <script type="module" src="src/ui/components/Settings.js"></script>
+    
+    <!-- Core System Scripts -->
+    <script type="module" src="src/modules/EthicsModule.js"></script>
+    <script type="module" src="src/modules/TaskManager.js"></script>
+    <script type="module" src="src/modules/NetworkManager.js"></script>
+    <script type="module" src="src/modules/ResourceMonitor.js"></script>
+    <script type="module" src="src/storage/IndexedDBManager.js"></script>
+    <script type="module" src="src/storage/IPFSManager.js"></script>
+    
+    <!-- Main Application Initialization -->
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+/* Agent Neo Notification System */
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    backdrop-filter: var(--glass-backdrop-filter);
+    box-shadow: var(--shadow-xl);
+    z-index: var(--z-toast);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all var(--transition-base);
+    pointer-events: none;
+}
+
+.notification--show {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.notification__content {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.notification__icon {
+    font-size: var(--font-size-xl);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notification__message {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    color: var(--color-text-primary);
+}
+
+.notification__close {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-base);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    font-size: var(--font-size-lg);
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification__close:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+}
+
+/* Notification types */
+.notification--info {
+    border-color: var(--color-accent);
+}
+
+.notification--info .notification__icon {
+    color: var(--color-accent);
+}
+
+.notification--success {
+    border-color: var(--color-success);
+}
+
+.notification--success .notification__icon {
+    color: var(--color-success);
+}
+
+.notification--warning {
+    border-color: var(--color-warning);
+}
+
+.notification--warning .notification__icon {
+    color: var(--color-warning);
+}
+
+.notification--error {
+    border-color: var(--color-danger);
+}
+
+.notification--error .notification__icon {
+    color: var(--color-danger);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .notification {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        min-width: auto;
+        transform: translateY(-100%);
+    }
+    
+    .notification--show {
+        transform: translateY(0);
+    }
+}
+
+/* Multiple notifications stacking */
+.notification:nth-child(2) {
+    top: 100px;
+}
+
+.notification:nth-child(3) {
+    top: 180px;
+}
+
+.notification:nth-child(4) {
+    top: 260px;
+}
+
+/* Animation for notification entrance */
+@keyframes notificationSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification--show {
+    animation: notificationSlideIn var(--transition-base);
+}

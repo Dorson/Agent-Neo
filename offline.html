@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Neo - Offline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .offline-container {
+            max-width: 500px;
+            padding: 40px;
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid rgba(0, 255, 159, 0.3);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .neo-logo {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            animation: pulseGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .logo-ring {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #00ff9f;
+            border-radius: 50%;
+            animation: rotate 3s linear infinite;
+        }
+        
+        .logo-core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: #00ff9f;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 255, 159, 0.5);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #00ff9f, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .status-message {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+        
+        .offline-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .retry-button {
+            background: #00ff9f;
+            color: #0f0f1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .retry-button:hover {
+            background: #00cc7f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 159, 0.3);
+        }
+        
+        .offline-features {
+            margin-top: 30px;
+            text-align: left;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+        
+        .offline-features h3 {
+            color: #cbd5e1;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .offline-features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .offline-features li {
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .offline-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #00ff9f;
+            font-weight: bold;
+        }
+        
+        @keyframes pulseGlow {
+            from { filter: drop-shadow(0 0 10px rgba(0, 255, 159, 0.5)); }
+            to { filter: drop-shadow(0 0 25px rgba(0, 255, 159, 0.8)); }
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .status-message {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        
+        <div class="neo-logo">
+            <div class="logo-ring"></div>
+            <div class="logo-core"></div>
+        </div>
+        
+        <h1>Agent Neo</h1>
+        
+        <div class="status-message">
+            <strong>You're currently offline</strong><br>
+            Some features may be limited without an internet connection.
+        </div>
+        
+        <button class="retry-button" onclick="window.location.reload()">
+            🔄 Try Again
+        </button>
+        
+        <div class="offline-features">
+            <h3>Available Offline Features:</h3>
+            <ul>
+                <li>View cached dashboard data</li>
+                <li>Access previous chat messages</li>
+                <li>Browse local knowledge base</li>
+                <li>Review ethics decisions</li>
+                <li>Check resource usage history</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 30px; font-size: 0.8rem; color: #64748b;">
+            Agent Neo will automatically reconnect when your internet connection is restored.
+        </div>
+    </div>
+    
+    <script>
+        // Check for connectivity and auto-reload when back online
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+        
+        // Periodically check if we can reach the main app
+        setInterval(() => {
+            fetch('/', { 
+                method: 'HEAD',
+                cache: 'no-cache'
+            }).then(() => {
+                window.location.reload();
+            }).catch(() => {
+                // Still offline, continue showing offline page
+            });
+        }, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>

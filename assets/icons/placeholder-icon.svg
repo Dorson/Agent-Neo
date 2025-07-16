@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#0f0f1a"/>
+    </linearGradient>
+    <linearGradient id="primary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff9f"/>
+      <stop offset="100%" style="stop-color:#00cc7f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)" rx="80"/>
+  
+  <!-- Outer Ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="url(#primary)" stroke-width="8" opacity="0.8">
+    <animateTransform attributeName="transform" type="rotate" values="0 256 256;360 256 256" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Middle Ring -->
+  <circle cx="256" cy="256" r="150" fill="none" stroke="url(#accent)" stroke-width="6" opacity="0.6">
+    <animateTransform attributeName="transform" type="rotate" values="360 256 256;0 256 256" dur="4s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Inner Ring -->
+  <circle cx="256" cy="256" r="100" fill="none" stroke="url(#primary)" stroke-width="4" opacity="0.4">
+    <animateTransform attributeName="transform" type="rotate" values="0 256 256;360 256 256" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Core -->
+  <circle cx="256" cy="256" r="60" fill="url(#primary)" filter="url(#glow)">
+    <animate attributeName="r" values="60;70;60" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Neural Network Pattern -->
+  <g opacity="0.3">
+    <line x1="256" y1="196" x2="256" y2="136" stroke="url(#primary)" stroke-width="2"/>
+    <line x1="256" y1="316" x2="256" y2="376" stroke="url(#primary)" stroke-width="2"/>
+    <line x1="196" y1="256" x2="136" y2="256" stroke="url(#primary)" stroke-width="2"/>
+    <line x1="316" y1="256" x2="376" y2="256" stroke="url(#primary)" stroke-width="2"/>
+    
+    <line x1="214" y1="214" x2="174" y2="174" stroke="url(#accent)" stroke-width="2"/>
+    <line x1="298" y1="298" x2="338" y2="338" stroke="url(#accent)" stroke-width="2"/>
+    <line x1="298" y1="214" x2="338" y2="174" stroke="url(#accent)" stroke-width="2"/>
+    <line x1="214" y1="298" x2="174" y2="338" stroke="url(#accent)" stroke-width="2"/>
+  </g>
+  
+  <!-- Connection Nodes -->
+  <circle cx="256" cy="136" r="8" fill="url(#primary)"/>
+  <circle cx="256" cy="376" r="8" fill="url(#primary)"/>
+  <circle cx="136" cy="256" r="8" fill="url(#primary)"/>
+  <circle cx="376" cy="256" r="8" fill="url(#primary)"/>
+  
+  <circle cx="174" cy="174" r="6" fill="url(#accent)"/>
+  <circle cx="338" cy="338" r="6" fill="url(#accent)"/>
+  <circle cx="338" cy="174" r="6" fill="url(#accent)"/>
+  <circle cx="174" cy="338" r="6" fill="url(#accent)"/>
+  
+  <!-- Brand Text -->
+  <text x="256" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="url(#primary)">AGENT NEO</text>
+</svg>
