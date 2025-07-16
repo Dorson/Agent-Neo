@@ -23,6 +23,11 @@ import dashboard from './ui/components/Dashboard.js';
 import chat from './ui/components/Chat.js';
 import settings from './ui/components/Settings.js';
 
+// Import new core modules
+import TaskAuctionSystem from './modules/TaskAuctionSystem.js';
+import SessionContextModule from './modules/SessionContextModule.js';
+import IPFSModule from './modules/IPFSModule.js';
+
 class AgentNeoApp {
     constructor() {
         this.version = '1.0.0';
@@ -30,6 +35,11 @@ class AgentNeoApp {
         this.startTime = Date.now();
         this.modules = new Map();
         this.initializationPromise = null;
+        
+        // Initialize new core modules
+        this.taskAuctionSystem = new TaskAuctionSystem();
+        this.sessionContext = new SessionContextModule();
+        this.ipfsModule = new IPFSModule();
         
         this.init();
     }
