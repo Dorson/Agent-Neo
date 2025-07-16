@@ -4,6 +4,16 @@
 
 
  https://dorson.github.io/Agent-Neo/
+
+
+
+
+ ## Read the White Paper for code implementation steps :
+
+
+
+ https://github.com/Dorson/Agent-Neo/blob/main/agent-neo-whitepaper.txt
+ 
  
 
 ## Overview
