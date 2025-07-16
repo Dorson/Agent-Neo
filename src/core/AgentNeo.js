@@ -121,36 +121,85 @@ class AgentNeo {
     async initializeCoreModules() {
         console.log('🔧 Initializing core modules...');
         
-        // Load module definitions (these would be loaded dynamically in a full implementation)
-        const coreModules = [
-            'EthicsModule',
-            'TaskManager', 
-            'NetworkManager',
-            'ResourceMonitor',
-            'IndexedDBManager',
-            'UIManager'
-        ];
-        
-        for (const moduleName of coreModules) {
-            try {
-                // In a full implementation, these would be dynamically imported
-                // For now, we register placeholder modules
-                this.registerModule({
-                    name: moduleName,
-                    version: '1.0.0',
-                    status: 'registered',
-                    capabilities: [],
-                    dependencies: []
-                });
-                
-                console.log(`✅ Module registered: ${moduleName}`);
-                
-            } catch (error) {
-                console.error(`❌ Failed to register module ${moduleName}:`, error);
-                stateManager.setState(`modules.failed`, [
-                    ...stateManager.getState('modules.failed', []),
-                    { name: moduleName, error: error.message, timestamp: Date.now() }
-                ]);
+        try {
+            // Import and register actual core modules
+            const { default: ethicsModule } = await import('../modules/EthicsModule.js');
+            const { default: proprioceptionModule } = await import('../modules/ProprioceptionModule.js');
+            const { default: knowledgeGraph } = await import('../modules/KnowledgeGraph.js');
+            const { default: p2pNetwork } = await import('../network/P2PNetwork.js');
+            
+            // Register modules with their actual instances
+            this.registerModule({
+                name: 'EthicsModule',
+                version: ethicsModule.version,
+                status: 'loaded',
+                capabilities: ['constitutional_ai', 'homeostasis', 'metabolic_load'],
+                dependencies: [],
+                instance: ethicsModule
+            });
+            
+            this.registerModule({
+                name: 'ProprioceptionModule', 
+                version: proprioceptionModule.version,
+                status: 'loaded',
+                capabilities: ['resource_monitoring', 'performance_tracking', 'health_checks'],
+                dependencies: [],
+                instance: proprioceptionModule
+            });
+            
+            this.registerModule({
+                name: 'KnowledgeGraph',
+                version: knowledgeGraph.version,
+                status: 'loaded', 
+                capabilities: ['crdt_storage', 'knowledge_myceliation', 'semantic_search'],
+                dependencies: [],
+                instance: knowledgeGraph
+            });
+            
+            this.registerModule({
+                name: 'P2PNetwork',
+                version: p2pNetwork.version,
+                status: 'loaded',
+                capabilities: ['webrtc_connections', 'protocol_evolution', 'mesh_networking'],
+                dependencies: [],
+                instance: p2pNetwork
+            });
+            
+            console.log('✅ Core modules loaded successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to load core modules:', error);
+            
+            // Fallback to placeholder modules if imports fail
+            const fallbackModules = [
+                { name: 'EthicsModule', capabilities: ['constitutional_ai'] },
+                { name: 'ProprioceptionModule', capabilities: ['resource_monitoring'] },
+                { name: 'KnowledgeGraph', capabilities: ['knowledge_storage'] },
+                { name: 'P2PNetwork', capabilities: ['networking'] }
+            ];
+            
+            for (const moduleInfo of fallbackModules) {
+                if (!this.modules.has(moduleInfo.name)) {
+                    this.registerModule({
+                        name: moduleInfo.name,
+                        version: '1.0.0',
+                        status: 'placeholder',
+                        capabilities: moduleInfo.capabilities,
+                        dependencies: [],
+                        instance: {
+                            name: moduleInfo.name,
+                            initialized: false,
+                            start: async () => console.log(`${moduleInfo.name} placeholder started`),
+                            stop: async () => console.log(`${moduleInfo.name} placeholder stopped`),
+                            getStatus: () => ({ status: 'placeholder', error: 'Module import failed' })
+                        }
+                    });
+                    
+                    stateManager.setState(`modules.failed`, [
+                        ...stateManager.getState('modules.failed', []),
+                        { name: moduleInfo.name, error: error.message, timestamp: Date.now() }
+                    ]);
+                }
             }
         }
         
@@ -296,31 +345,36 @@ class AgentNeo {
         setTimeout(() => this.start(), 1000);
     }
 
-    registerModule({ name, module, config = {} }) {
+    registerModule(moduleInfo) {
+        // Handle both old and new API formats
+        const { name, module, instance, config = {}, version, status, capabilities, dependencies } = moduleInfo;
+        
         if (this.modules.has(name)) {
             console.warn(`⚠️ Module ${name} is already registered`);
             return false;
         }
         
-        const moduleInfo = {
+        const moduleInstance = instance || module;
+        
+        const registeredModule = {
             name,
-            module,
+            instance: moduleInstance,
             config,
-            status: 'registered',
+            status: status || 'registered',
             registeredAt: Date.now(),
-            version: module?.version || '1.0.0',
-            capabilities: module?.capabilities || [],
-            dependencies: module?.dependencies || []
+            version: version || moduleInstance?.version || '1.0.0',
+            capabilities: capabilities || moduleInstance?.capabilities || [],
+            dependencies: dependencies || moduleInstance?.dependencies || []
         };
         
-        this.modules.set(name, moduleInfo);
+        this.modules.set(name, registeredModule);
         
         // Update state
         stateManager.setState('modules.loaded', Array.from(this.modules.keys()));
         
-        eventBus.emit('module:registered', { name, moduleInfo });
+        eventBus.emit('module:registered', { name, moduleInfo: registeredModule });
         
-        console.log(`📦 Module registered: ${name}`);
+        console.log(`📦 Module registered: ${name} v${registeredModule.version}`);
         return true;
     }
 
@@ -359,8 +413,10 @@ class AgentNeo {
         }
         
         try {
-            if (moduleInfo.module && typeof moduleInfo.module.start === 'function') {
-                await moduleInfo.module.start();
+            const moduleInstance = moduleInfo.instance;
+            
+            if (moduleInstance && typeof moduleInstance.start === 'function') {
+                await moduleInstance.start();
             }
             
             moduleInfo.status = 'running';
@@ -396,8 +452,10 @@ class AgentNeo {
         }
         
         try {
-            if (moduleInfo.module && typeof moduleInfo.module.stop === 'function') {
-                await moduleInfo.module.stop();
+            const moduleInstance = moduleInfo.instance;
+            
+            if (moduleInstance && typeof moduleInstance.stop === 'function') {
+                await moduleInstance.stop();
             }
             
             moduleInfo.status = 'stopped';
