@@ -85,6 +85,8 @@ export class MemStorage implements IStorage {
     const node: AgentNode = { 
       ...insertNode, 
       id, 
+      status: insertNode.status || 'inactive',
+      reputation: insertNode.reputation || 100,
       createdAt: now,
       updatedAt: now
     };
@@ -111,6 +113,10 @@ export class MemStorage implements IStorage {
     const task: Task = { 
       ...insertTask, 
       id, 
+      status: insertTask.status || 'pending',
+      priority: insertTask.priority || 'medium',
+      assignedTo: insertTask.assignedTo || null,
+      result: insertTask.result || null,
       createdAt: now,
       updatedAt: now
     };
@@ -141,6 +147,8 @@ export class MemStorage implements IStorage {
     const peer: NetworkPeer = { 
       ...insertPeer, 
       id, 
+      status: insertPeer.status || 'active',
+      reputation: insertPeer.reputation || 100,
       lastSeen: now
     };
     this.networkPeers.set(insertPeer.peerId, peer);
