@@ -29,6 +29,11 @@ import SessionContextModule from './modules/SessionContextModule.js';
 import IPFSModule from './modules/IPFSModule.js';
 import TaskManager from './modules/TaskManager.js';
 import VoiceInterface from './modules/VoiceInterface.js';
+import NetworkTopologyOptimizer from './modules/NetworkTopologyOptimizer.js';
+import AIModuleManager from './modules/AIModuleManager.js';
+import DataResourceManager from './modules/DataResourceManager.js';
+import ConsensusManager from './modules/ConsensusManager.js';
+import NLPProcessor from './modules/NLPProcessor.js';
 
 // Import new UI components
 import TasksView from './ui/components/TasksView.js';
@@ -47,6 +52,11 @@ class AgentNeoApp {
         this.ipfsModule = new IPFSModule();
         this.taskManager = new TaskManager();
         this.voiceInterface = new VoiceInterface();
+        this.networkTopologyOptimizer = new NetworkTopologyOptimizer();
+        this.aiModuleManager = new AIModuleManager();
+        this.dataResourceManager = new DataResourceManager();
+        this.consensusManager = new ConsensusManager();
+        this.nlpProcessor = new NLPProcessor();
         
         // Initialize UI components
         this.tasksView = new TasksView();
