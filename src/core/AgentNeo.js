@@ -127,6 +127,9 @@ class AgentNeo {
             const { default: proprioceptionModule } = await import('../modules/ProprioceptionModule.js');
             const { default: knowledgeGraph } = await import('../modules/KnowledgeGraph.js');
             const { default: p2pNetwork } = await import('../network/P2PNetwork.js');
+            const { default: TaskAuctionSystem } = await import('../modules/TaskAuctionSystem.js');
+            const { default: SessionContextModule } = await import('../modules/SessionContextModule.js');
+            const { default: IPFSModule } = await import('../modules/IPFSModule.js');
             
             // Register modules with their actual instances
             this.registerModule({
@@ -165,6 +168,37 @@ class AgentNeo {
                 instance: p2pNetwork
             });
             
+            // Register new core modules
+            const taskAuctionSystem = new TaskAuctionSystem();
+            this.registerModule({
+                name: 'TaskAuctionSystem',
+                version: taskAuctionSystem.version,
+                status: 'loaded',
+                capabilities: ['task_auction', 'proof_of_performance', 'distributed_consensus', 'economic_incentives'],
+                dependencies: ['EthicsModule', 'P2PNetwork'],
+                instance: taskAuctionSystem
+            });
+            
+            const sessionContext = new SessionContextModule();
+            this.registerModule({
+                name: 'SessionContextModule',
+                version: sessionContext.version,
+                status: 'loaded',
+                capabilities: ['session_management', 'context_tracking', 'stateful_interaction', 'project_goals'],
+                dependencies: ['KnowledgeGraph'],
+                instance: sessionContext
+            });
+            
+            const ipfsModule = new IPFSModule();
+            this.registerModule({
+                name: 'IPFSModule',
+                version: ipfsModule.version,
+                status: 'loaded',
+                capabilities: ['file_storage', 'content_addressing', 'distributed_storage', 'version_control'],
+                dependencies: ['P2PNetwork'],
+                instance: ipfsModule
+            });
+            
             console.log('✅ Core modules loaded successfully');
             
         } catch (error) {
@@ -175,7 +209,10 @@ class AgentNeo {
                 { name: 'EthicsModule', capabilities: ['constitutional_ai'] },
                 { name: 'ProprioceptionModule', capabilities: ['resource_monitoring'] },
                 { name: 'KnowledgeGraph', capabilities: ['knowledge_storage'] },
-                { name: 'P2PNetwork', capabilities: ['networking'] }
+                { name: 'P2PNetwork', capabilities: ['networking'] },
+                { name: 'TaskAuctionSystem', capabilities: ['task_auction', 'proof_of_performance'] },
+                { name: 'SessionContextModule', capabilities: ['session_management', 'context_tracking'] },
+                { name: 'IPFSModule', capabilities: ['file_storage', 'distributed_storage'] }
             ];
             
             for (const moduleInfo of fallbackModules) {
