@@ -18,6 +18,11 @@ import stateManager from './core/StateManager.js';
 import agentNeo from './core/AgentNeo.js';
 import uiManager from './ui/UIManager.js';
 
+// Import UI components
+import dashboard from './ui/components/Dashboard.js';
+import chat from './ui/components/Chat.js';
+import settings from './ui/components/Settings.js';
+
 class AgentNeoApp {
     constructor() {
         this.version = '1.0.0';
