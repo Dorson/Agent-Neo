@@ -47,6 +47,15 @@ import LocalLedger from './core/LocalLedger.js';
 import WebWorkersManager from './core/WebWorkersManager.js';
 import FederatedLearningModule from './modules/FederatedLearningModule.js';
 
+// Import critical networking components
+import messageProtocol from './networking/messageProtocol.js';
+import dataTransport from './networking/dataTransport.js';
+import networkMonitor from './networking/networkMonitor.js';
+
+// Import core utilities
+import logger from './core/logger.js';
+import utils from './core/utils.js';
+
         // Import new UI components
         import TasksView from './ui/components/TasksView.js';
         
@@ -83,6 +92,15 @@ class AgentNeoApp {
         this.localLedger = new LocalLedger();
         this.webWorkersManager = WebWorkersManager;
         this.federatedLearningModule = new FederatedLearningModule();
+        
+        // Initialize critical networking components
+        this.messageProtocol = messageProtocol;
+        this.dataTransport = dataTransport;
+        this.networkMonitor = networkMonitor;
+        
+        // Initialize core utilities
+        this.logger = logger;
+        this.utils = utils;
         
         // Initialize identity setup component
         this.identitySetup = new IdentitySetup();
