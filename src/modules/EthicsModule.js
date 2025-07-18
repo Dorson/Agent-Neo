@@ -55,22 +55,35 @@ class EthicsModule {
             ]
         };
         
-        // Ethics configuration
+        // Enhanced ethics configuration
         this.config = {
             sensitivityLevel: 8, // 1-10 scale
             homeostasisMode: 'balanced', // strict, balanced, permissive
             metabolicLimitRatio: 0.7, // Max 70% of available resources
             ethicalTimeoutMs: 5000, // Max time for ethical evaluation
-            logRetentionDays: 30
+            logRetentionDays: 30,
+            maxMetabolicLoad: 100, // Maximum acceptable metabolic load
+            homeostasisWindow: 0.1, // 10% deviation allowed
+            ethicalDecayRate: 0.05, // 5% per period
+            violationThreshold: 3, // Max violations before action
+            frontierLogRetention: 10000, // Keep last 10k entries
+            constitutionVersion: '1.0.0'
         };
         
-        // Ethical frontier log for learning
+        // Enhanced ethical frontier log for constitutional evolution
         this.ethicalFrontierLog = [];
-        this.maxLogEntries = 1000;
+        this.metabolicLoadHistory = [];
+        this.homeostasisTargets = new Map();
+        this.maxLogEntries = this.config.frontierLogRetention;
         
-        // Violation tracking
+        // Enhanced violation tracking
         this.violations = [];
         this.warnings = [];
+        this.ethicsViolations = [];
+        
+        // Constitutional evolution tracking
+        this.constitutionProposals = [];
+        this.communityVotes = new Map();
         
         this.init();
     }
@@ -191,60 +204,256 @@ class EthicsModule {
         return evaluation;
     }
 
+    /**
+     * Enhanced metabolic load calculation as per whitepaper specifications
+     * Calculates the comprehensive resource impact of a planned action
+     * @param {Object} plan - Action plan to evaluate
+     * @returns {Object} Detailed metabolic load analysis
+     */
     calculateMetabolicLoad(plan) {
-        // Implement metabolic load calculation as described in whitepaper
         const load = {
-            cpu: 0,
+            computational: 0,
             memory: 0,
             network: 0,
             storage: 0,
-            time: 0
+            social: 0,
+            temporal: 0,
+            cognitive: 0
         };
         
-        // Analyze plan steps for resource requirements
+        // Analyze plan complexity and resource requirements
         if (plan.steps) {
             for (const step of plan.steps) {
-                // Estimate resources based on step type
-                switch (step.type) {
-                    case 'ai_inference':
-                        load.cpu += 20;
-                        load.memory += 100;
-                        load.time += 2000;
-                        break;
-                    case 'file_operation':
-                        load.storage += step.size || 10;
-                        load.cpu += 5;
-                        break;
-                    case 'network_request':
-                        load.network += step.size || 1;
-                        load.cpu += 10;
-                        break;
-                    case 'data_processing':
-                        load.cpu += step.complexity || 15;
-                        load.memory += step.dataSize || 50;
-                        break;
-                    default:
-                        load.cpu += 5;
-                        load.memory += 10;
-                }
+                const stepLoad = this.calculateStepLoad(step);
+                
+                // Accumulate loads
+                load.computational += stepLoad.computational;
+                load.memory += stepLoad.memory;
+                load.network += stepLoad.network;
+                load.storage += stepLoad.storage;
+                load.social += stepLoad.social;
+                load.temporal += stepLoad.temporal;
+                load.cognitive += stepLoad.cognitive;
             }
         }
         
-        // Calculate total weighted load
+        // Factor in plan complexity and interconnections
+        const complexityMultiplier = this.calculateComplexityMultiplier(plan);
+        
+        // Apply homeostasis constraints
+        const constrainedLoad = this.applyHomeostasisConstraints(load, complexityMultiplier);
+        
+        // Calculate total weighted metabolic load
         const totalLoad = (
-            load.cpu * 0.3 +
-            load.memory * 0.3 +
-            load.network * 0.2 +
-            load.storage * 0.1 +
-            load.time * 0.1
+            constrainedLoad.computational * 0.25 +
+            constrainedLoad.memory * 0.2 +
+            constrainedLoad.network * 0.15 +
+            constrainedLoad.storage * 0.1 +
+            constrainedLoad.social * 0.15 +
+            constrainedLoad.temporal * 0.1 +
+            constrainedLoad.cognitive * 0.05
         );
         
-        return {
-            ...load,
+        // Record in history for analysis
+        this.metabolicLoadHistory.push({
+            planId: plan.id || `plan_${Date.now()}`,
+            load: constrainedLoad,
             total: totalLoad,
+            complexity: complexityMultiplier,
+            timestamp: Date.now()
+        });
+        
+        // Maintain history size
+        if (this.metabolicLoadHistory.length > 1000) {
+            this.metabolicLoadHistory.shift();
+        }
+        
+        return {
+            ...constrainedLoad,
+            total: totalLoad,
+            complexity: complexityMultiplier,
+            homeostasisRating: this.calculateHomeostasisRating(totalLoad),
             predicted: true,
             timestamp: Date.now()
         };
+    }
+
+    /**
+     * Calculate metabolic load for individual step
+     * @param {Object} step - Plan step
+     * @returns {Object} Step load breakdown
+     */
+    calculateStepLoad(step) {
+        const baseLoad = {
+            computational: 1,
+            memory: 1,
+            network: 0,
+            storage: 0,
+            social: 0,
+            temporal: 1,
+            cognitive: 1
+        };
+        
+        // Step-specific load calculations
+        switch (step.type) {
+            case 'ai_inference':
+                baseLoad.computational = 25 + (step.modelSize || 0) * 0.1;
+                baseLoad.memory = 50 + (step.contextSize || 0) * 0.01;
+                baseLoad.cognitive = 20 + (step.complexity || 1) * 5;
+                baseLoad.temporal = step.estimatedTime || 5000;
+                break;
+                
+            case 'network_request':
+                baseLoad.network = (step.dataSize || 1) * 0.1;
+                baseLoad.computational = 5;
+                baseLoad.temporal = step.timeout || 1000;
+                if (step.external) {
+                    baseLoad.social = 2; // External interaction cost
+                }
+                break;
+                
+            case 'data_processing':
+                baseLoad.computational = (step.dataSize || 100) * 0.01;
+                baseLoad.memory = (step.dataSize || 100) * 0.005;
+                baseLoad.cognitive = step.algorithmComplexity || 5;
+                break;
+                
+            case 'file_operation':
+                baseLoad.storage = step.fileSize || 1;
+                baseLoad.computational = 2;
+                baseLoad.temporal = (step.fileSize || 1) * 0.1;
+                break;
+                
+            case 'guild_interaction':
+                baseLoad.social = 10 + (step.memberCount || 1) * 2;
+                baseLoad.network = step.messageSize || 0.5;
+                baseLoad.cognitive = 5;
+                break;
+                
+            case 'knowledge_synthesis':
+                baseLoad.cognitive = 30 + (step.sourceCount || 1) * 5;
+                baseLoad.computational = 15;
+                baseLoad.memory = 20;
+                baseLoad.temporal = 3000;
+                break;
+                
+            default:
+                // Conservative default load
+                baseLoad.computational = 5;
+                baseLoad.memory = 5;
+                baseLoad.cognitive = 3;
+        }
+        
+        return baseLoad;
+    }
+
+    /**
+     * Calculate complexity multiplier based on plan interconnections
+     * @param {Object} plan - Action plan
+     * @returns {number} Complexity multiplier
+     */
+    calculateComplexityMultiplier(plan) {
+        let complexity = 1.0;
+        
+        // Factor in step count
+        const stepCount = plan.steps ? plan.steps.length : 1;
+        complexity += (stepCount - 1) * 0.1; // 10% per additional step
+        
+        // Factor in dependencies
+        if (plan.dependencies && plan.dependencies.length > 0) {
+            complexity += plan.dependencies.length * 0.15;
+        }
+        
+        // Factor in parallel processing
+        if (plan.parallel) {
+            complexity += 0.3; // Parallel coordination overhead
+        }
+        
+        // Factor in external interactions
+        const externalSteps = (plan.steps || []).filter(step => step.external).length;
+        complexity += externalSteps * 0.2;
+        
+        // Cap complexity multiplier
+        return Math.min(complexity, 3.0);
+    }
+
+    /**
+     * Apply homeostasis constraints to prevent unbounded optimization
+     * @param {Object} load - Calculated load
+     * @param {number} complexity - Complexity multiplier
+     * @returns {Object} Constrained load
+     */
+    applyHomeostasisConstraints(load, complexity) {
+        const constrainedLoad = { ...load };
+        
+        // Get current system state
+        const systemState = stateManager.getState('resources') || {};
+        const currentUtilization = systemState.utilization || 0.5;
+        
+        // Apply homeostasis window constraints
+        const homeostasisFactor = this.calculateHomeostasisFactor(currentUtilization);
+        
+        // Constrain each resource type
+        for (const [key, value] of Object.entries(constrainedLoad)) {
+            // Apply homeostasis constraint
+            constrainedLoad[key] = value * homeostasisFactor;
+            
+            // Apply absolute limits
+            const maxValues = {
+                computational: this.config.maxMetabolicLoad * 0.4,
+                memory: this.config.maxMetabolicLoad * 0.3,
+                network: this.config.maxMetabolicLoad * 0.2,
+                storage: this.config.maxMetabolicLoad * 0.1,
+                social: this.config.maxMetabolicLoad * 0.15,
+                temporal: 30000, // 30 seconds max
+                cognitive: this.config.maxMetabolicLoad * 0.25
+            };
+            
+            if (maxValues[key]) {
+                constrainedLoad[key] = Math.min(constrainedLoad[key], maxValues[key]);
+            }
+        }
+        
+        return constrainedLoad;
+    }
+
+    /**
+     * Calculate homeostasis factor based on current system state
+     * @param {number} currentUtilization - Current resource utilization (0-1)
+     * @returns {number} Homeostasis constraint factor
+     */
+    calculateHomeostasisFactor(currentUtilization) {
+        // Ideal utilization target
+        const targetUtilization = 0.6;
+        const deviation = Math.abs(currentUtilization - targetUtilization);
+        
+        // If we're within the homeostasis window, allow normal operation
+        if (deviation <= this.config.homeostasisWindow) {
+            return 1.0;
+        }
+        
+        // If utilization is too high, reduce allowed load
+        if (currentUtilization > targetUtilization) {
+            const excessFactor = (currentUtilization - targetUtilization) / (1.0 - targetUtilization);
+            return Math.max(0.1, 1.0 - excessFactor * 0.8);
+        }
+        
+        // If utilization is too low, we can afford slightly more load
+        const underFactor = (targetUtilization - currentUtilization) / targetUtilization;
+        return Math.min(1.5, 1.0 + underFactor * 0.3);
+    }
+
+    /**
+     * Calculate homeostasis rating for a given load
+     * @param {number} totalLoad - Total metabolic load
+     * @returns {string} Homeostasis rating
+     */
+    calculateHomeostasisRating(totalLoad) {
+        if (totalLoad <= this.config.maxMetabolicLoad * 0.3) return 'excellent';
+        if (totalLoad <= this.config.maxMetabolicLoad * 0.6) return 'good';
+        if (totalLoad <= this.config.maxMetabolicLoad * 0.8) return 'acceptable';
+        if (totalLoad <= this.config.maxMetabolicLoad) return 'concerning';
+        return 'excessive';
     }
 
     checkConstitutionalCompliance(plan) {

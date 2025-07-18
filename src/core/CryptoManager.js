@@ -42,33 +42,45 @@ class CryptoManager {
 
     /**
      * Generate BLS key pair
-     * Note: This is a simplified implementation. In production, you would use
-     * a proper BLS library like noble-bls12-381
+     * Uses native BLS implementation for proper cryptographic support
      */
     async generateBLSKeyPair() {
         try {
-            // For now, we'll use ECDSA as a placeholder until we can integrate a proper BLS library
-            const keyPair = await this.webCrypto.subtle.generateKey(
-                {
-                    name: 'ECDSA',
-                    namedCurve: 'P-256'
-                },
-                true,
-                ['sign', 'verify']
-            );
-            
-            // Export keys to raw format
-            const publicKey = await this.webCrypto.subtle.exportKey('raw', keyPair.publicKey);
-            const privateKey = await this.webCrypto.subtle.exportKey('pkcs8', keyPair.privateKey);
-            
-            return {
-                publicKey: this.arrayBufferToBase64(publicKey),
-                privateKey: this.arrayBufferToBase64(privateKey),
-                keyPair // Keep the CryptoKey objects for direct use
-            };
-            
+            if (this.blsEnabled) {
+                // Import the BLS library
+                const { bls12_381: bls } = await import('./libs/noble-bls12-381.js');
+                
+                const privateKey = bls.utils.randomPrivateKey();
+                const publicKey = await bls.getPublicKey(privateKey);
+                
+                return {
+                    privateKey: bls.utils.bytesToHex(privateKey),
+                    publicKey: bls.utils.bytesToHex(publicKey),
+                    keyType: 'BLS12-381'
+                };
+            } else {
+                // Fallback to ECDSA for compatibility
+                const keyPair = await this.webCrypto.subtle.generateKey(
+                    {
+                        name: 'ECDSA',
+                        namedCurve: 'P-256'
+                    },
+                    true,
+                    ['sign', 'verify']
+                );
+                
+                const publicKey = await this.webCrypto.subtle.exportKey('raw', keyPair.publicKey);
+                const privateKey = await this.webCrypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+                
+                return {
+                    privateKey: this.arrayBufferToBase64(privateKey),
+                    publicKey: this.arrayBufferToBase64(publicKey),
+                    keyPair,
+                    keyType: 'ECDSA-P256'
+                };
+            }
         } catch (error) {
-            console.error('❌ BLS key pair generation failed:', error);
+            console.error('❌ Key pair generation failed:', error);
             throw error;
         }
     }
