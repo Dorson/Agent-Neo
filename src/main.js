@@ -42,10 +42,14 @@ import SkillModuleSandbox from './modules/SkillModuleSandbox.js';
 import DecentralizedSkillModuleLoader from './modules/DecentralizedSkillModuleLoader.js';
 import EnhancedSettingsManager from './modules/EnhancedSettingsManager.js';
 import GuildManager from './modules/GuildManager.js';
-import P2PService from './network/P2PService.js';
+import NativeP2PService from './network/NativeP2PService.js';
 import LocalLedger from './core/LocalLedger.js';
-import WebWorkersManager from './core/WebWorkersManager.js';
+import WebWorkersManager from './core/webWorkers.js';
 import FederatedLearningModule from './modules/FederatedLearningModule.js';
+
+// Import missing critical modules
+import ResourceManager from './data/resourceManager.js';
+import GuildMembership from './modules/guilds/guildMembership.js';
 
 // Import critical networking components
 import messageProtocol from './networking/messageProtocol.js';
@@ -88,10 +92,14 @@ class AgentNeoApp {
         this.decentralizedSkillModuleLoader = new DecentralizedSkillModuleLoader();
         this.enhancedSettingsManager = new EnhancedSettingsManager();
         this.guildManager = new GuildManager();
-        this.p2pService = new P2PService();
+        this.p2pService = new NativeP2PService();
         this.localLedger = new LocalLedger();
         this.webWorkersManager = WebWorkersManager;
         this.federatedLearningModule = new FederatedLearningModule();
+        
+        // Initialize missing critical modules
+        this.resourceManager = new ResourceManager();
+        this.guildMembership = new GuildMembership();
         
         // Initialize critical networking components
         this.messageProtocol = messageProtocol;
