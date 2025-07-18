@@ -1,97 +1,85 @@
 /**
- * Resource Monitor Module - Real-time Resource Monitoring
+ * Resource Monitor Module
  * 
- * Implements comprehensive resource monitoring as described in the whitepaper.
+ * Monitors system resources and calculates metabolic load as specified
+ * in the implementation plan and whitepaper. Implements the homeostasis
+ * principle by tracking resource usage and enforcing limits.
+ * 
  * Features:
- * - Real-time CPU, memory, and network monitoring
- * - Configurable resource limits and alerts
- * - Battery and device condition monitoring
- * - Resource usage analytics and trends
- * - Automatic throttling and optimization
- * - Resource efficiency recommendations
+ * - CPU, memory, network, and storage monitoring
  * - Metabolic load calculation
+ * - Resource limit enforcement
+ * - Performance metrics collection
+ * - Hardware API integration
  */
 
 import eventBus from '../core/EventBus.js';
 import stateManager from '../core/StateManager.js';
+import { config } from '../core/config.js';
 
 class ResourceMonitor {
     constructor() {
         this.name = 'ResourceMonitor';
         this.version = '1.0.0';
         this.initialized = false;
-        this.active = false;
+        this.monitoring = false;
         
-        // Resource monitoring state
-        this.resources = {
-            cpu: { usage: 0, limit: 70, history: [] },
-            memory: { usage: 0, limit: 80, history: [] },
-            network: { usage: 0, limit: 100, history: [] },
-            battery: { level: 100, charging: false, history: [] },
-            storage: { used: 0, available: 0, history: [] }
+        // Resource usage tracking
+        this.currentUsage = {
+            cpu: 0,
+            memory: 0,
+            network: 0,
+            storage: 0,
+            battery: 100
+        };
+        
+        // Metabolic load tracking
+        this.metabolicLoad = {
+            current: 0,
+            average: 0,
+            peak: 0,
+            history: []
+        };
+        
+        // Resource limits from config
+        this.limits = {
+            maxCpu: config.resourceLimits.maxCpu,
+            maxMemory: config.resourceLimits.maxMemory,
+            maxNetwork: config.resourceLimits.maxNetwork,
+            maxStorage: config.resourceLimits.maxStorage,
+            metabolicLimitRatio: config.resourceLimits.metabolicLimitRatio
         };
         
         // Performance metrics
         this.metrics = {
-            frameRate: 60,
-            responseTime: 0,
-            throughput: 0,
-            efficiency: 100,
-            metabolicLoad: 0
+            samples: [],
+            maxSamples: 100,
+            averageInterval: 5000, // 5 seconds
+            lastSample: Date.now()
+        };
+        
+        // Hardware API support
+        this.hardwareAPIs = {
+            battery: !!navigator.getBattery,
+            memory: !!performance.memory,
+            network: !!navigator.connection,
+            storage: !!navigator.storage
         };
         
         // Monitoring intervals
-        this.intervals = {
-            cpu: null,
-            memory: null,
-            network: null,
-            battery: null,
-            storage: null
-        };
-        
-        // Configuration
-        this.config = {
-            monitoringInterval: 1000, // 1 second
-            historyLength: 100,
-            alertThreshold: 0.9, // 90% of limit
-            throttleThreshold: 0.95, // 95% of limit
-            enableThrottling: true,
-            enableAlerts: true,
-            enableOptimization: true
-        };
-        
-        // Alert state
-        this.alerts = [];
-        this.throttleState = {
-            cpu: false,
-            memory: false,
-            network: false,
-            battery: false
-        };
-        
-        // Device capabilities
-        this.deviceCapabilities = {
-            cores: navigator.hardwareConcurrency || 4,
-            memory: navigator.deviceMemory || 4,
-            connection: null,
-            battery: null
-        };
-        
-        // Performance observers
-        this.performanceObserver = null;
-        this.memoryObserver = null;
+        this.monitoringInterval = null;
+        this.metricsInterval = null;
         
         this.init();
     }
-    
+
     async init() {
         try {
             console.log('📊 Initializing Resource Monitor...');
             
             this.setupEventListeners();
-            this.detectDeviceCapabilities();
-            await this.initializePerformanceObservers();
-            this.loadConfiguration();
+            await this.detectHardwareCapabilities();
+            await this.startMonitoring();
             
             this.initialized = true;
             console.log('✅ Resource Monitor initialized');
@@ -99,7 +87,7 @@ class ResourceMonitor {
             eventBus.emit('module:initialized', {
                 name: this.name,
                 version: this.version,
-                capabilities: ['resource_monitoring', 'performance_analysis', 'throttling']
+                capabilities: ['resource_monitoring', 'metabolic_load', 'performance_metrics']
             });
             
         } catch (error) {
@@ -107,684 +95,393 @@ class ResourceMonitor {
             throw error;
         }
     }
-    
+
     setupEventListeners() {
-        // Module lifecycle
-        eventBus.on('module:start', this.handleModuleStart.bind(this));
-        eventBus.on('module:stop', this.handleModuleStop.bind(this));
-        
-        // Task events for resource tracking
-        eventBus.on('task:started', this.handleTaskStarted.bind(this));
-        eventBus.on('task:completed', this.handleTaskCompleted.bind(this));
-        eventBus.on('task:progress', this.handleTaskProgress.bind(this));
-        
-        // Worker events for resource usage
-        eventBus.on('worker:message', this.handleWorkerMessage.bind(this));
-        
-        // Configuration updates
-        eventBus.on('settings:resource-limits', this.updateResourceLimits.bind(this));
-        
-        // System events
-        eventBus.on('system:low-memory', this.handleLowMemory.bind(this));
-        eventBus.on('system:battery-low', this.handleLowBattery.bind(this));
-        
-        // UI events
-        eventBus.on('ui:resource-optimize', this.optimizeResources.bind(this));
-        eventBus.on('ui:clear-alerts', this.clearAlerts.bind(this));
+        eventBus.on('resource:start-monitoring', this.startMonitoring.bind(this));
+        eventBus.on('resource:stop-monitoring', this.stopMonitoring.bind(this));
+        eventBus.on('resource:update-limits', this.updateLimits.bind(this));
+        eventBus.on('resource:get-status', this.getResourceStatus.bind(this));
+        eventBus.on('task:start', this.onTaskStart.bind(this));
+        eventBus.on('task:complete', this.onTaskComplete.bind(this));
     }
-    
-    detectDeviceCapabilities() {
-        // CPU cores
-        this.deviceCapabilities.cores = navigator.hardwareConcurrency || 4;
+
+    async detectHardwareCapabilities() {
+        console.log('🔍 Detecting hardware capabilities...');
         
-        // Memory
-        this.deviceCapabilities.memory = navigator.deviceMemory || 4;
-        
-        // Network connection
-        if (navigator.connection) {
-            this.deviceCapabilities.connection = {
-                type: navigator.connection.effectiveType,
-                downlink: navigator.connection.downlink,
-                rtt: navigator.connection.rtt,
-                saveData: navigator.connection.saveData
-            };
+        // Check Battery API
+        if (this.hardwareAPIs.battery) {
+            try {
+                const battery = await navigator.getBattery();
+                this.battery = battery;
+                console.log('🔋 Battery API available');
+            } catch (error) {
+                console.warn('⚠️ Battery API not accessible:', error);
+                this.hardwareAPIs.battery = false;
+            }
         }
         
-        console.log('💻 Device capabilities detected:', this.deviceCapabilities);
-    }
-    
-    async initializePerformanceObservers() {
-        try {
-            // Performance observer for frame rate and timing
-            if (typeof PerformanceObserver !== 'undefined') {
-                this.performanceObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    this.processPerformanceEntries(entries);
-                });
-                
-                this.performanceObserver.observe({ entryTypes: ['measure', 'navigation'] });
+        // Check Memory API
+        if (this.hardwareAPIs.memory) {
+            console.log('💾 Memory API available');
+        }
+        
+        // Check Network API
+        if (this.hardwareAPIs.network) {
+            console.log('📡 Network API available');
+        }
+        
+        // Check Storage API
+        if (this.hardwareAPIs.storage) {
+            try {
+                const estimate = await navigator.storage.estimate();
+                console.log('💿 Storage API available:', estimate);
+            } catch (error) {
+                console.warn('⚠️ Storage API not accessible:', error);
+                this.hardwareAPIs.storage = false;
             }
-            
-            // Memory observer (if available)
-            if (performance.memory) {
-                this.memoryObserver = setInterval(() => {
-                    this.updateMemoryUsage();
-                }, this.config.monitoringInterval);
-            }
-            
-        } catch (error) {
-            console.warn('⚠️ Performance observers not fully supported:', error);
         }
     }
-    
-    loadConfiguration() {
-        const savedConfig = stateManager.getState('resourceMonitor.config', {});
-        this.config = { ...this.config, ...savedConfig };
+
+    async startMonitoring() {
+        if (this.monitoring) {
+            console.log('📊 Resource monitoring already active');
+            return;
+        }
         
-        // Apply saved resource limits
-        const savedLimits = stateManager.getState('resourceMonitor.limits', {});
-        Object.keys(savedLimits).forEach(resource => {
-            if (this.resources[resource]) {
-                this.resources[resource].limit = savedLimits[resource];
-            }
-        });
-    }
-    
-    // Resource monitoring methods
-    startMonitoring() {
-        if (this.active) return;
+        console.log('🎯 Starting resource monitoring...');
+        this.monitoring = true;
         
-        console.log('📊 Starting resource monitoring...');
-        this.active = true;
+        // Start main monitoring loop
+        this.monitoringInterval = setInterval(async () => {
+            await this.collectResourceMetrics();
+            this.calculateMetabolicLoad();
+            this.checkResourceLimits();
+            this.updateState();
+        }, 2000); // Every 2 seconds
         
-        // Start monitoring intervals
-        this.intervals.cpu = setInterval(() => {
-            this.updateCPUUsage();
-        }, this.config.monitoringInterval);
-        
-        this.intervals.memory = setInterval(() => {
-            this.updateMemoryUsage();
-        }, this.config.monitoringInterval);
-        
-        this.intervals.network = setInterval(() => {
-            this.updateNetworkUsage();
-        }, this.config.monitoringInterval);
-        
-        this.intervals.battery = setInterval(() => {
-            this.updateBatteryStatus();
-        }, this.config.monitoringInterval * 5); // Check battery less frequently
-        
-        this.intervals.storage = setInterval(() => {
-            this.updateStorageUsage();
-        }, this.config.monitoringInterval * 10); // Check storage even less frequently
-        
-        // Start performance monitoring
-        this.startPerformanceMonitoring();
+        // Start metrics aggregation
+        this.metricsInterval = setInterval(() => {
+            this.aggregateMetrics();
+        }, this.metrics.averageInterval);
         
         eventBus.emit('resource:monitoring-started');
     }
-    
-    stopMonitoring() {
-        if (!this.active) return;
-        
-        console.log('📊 Stopping resource monitoring...');
-        this.active = false;
-        
-        // Clear all intervals
-        Object.keys(this.intervals).forEach(key => {
-            if (this.intervals[key]) {
-                clearInterval(this.intervals[key]);
-                this.intervals[key] = null;
-            }
-        });
-        
-        // Stop performance monitoring
-        if (this.performanceObserver) {
-            this.performanceObserver.disconnect();
+
+    async stopMonitoring() {
+        if (!this.monitoring) {
+            return;
         }
         
-        if (this.memoryObserver) {
-            clearInterval(this.memoryObserver);
+        console.log('🛑 Stopping resource monitoring...');
+        this.monitoring = false;
+        
+        if (this.monitoringInterval) {
+            clearInterval(this.monitoringInterval);
+            this.monitoringInterval = null;
+        }
+        
+        if (this.metricsInterval) {
+            clearInterval(this.metricsInterval);
+            this.metricsInterval = null;
         }
         
         eventBus.emit('resource:monitoring-stopped');
     }
-    
-    updateCPUUsage() {
-        // Estimate CPU usage based on performance timing
-        const now = performance.now();
-        const timeSinceLastUpdate = now - (this.lastCPUUpdate || now);
-        
-        // Use frame rate and task completion time as CPU usage indicators
-        let cpuUsage = 0;
-        
-        if (this.metrics.frameRate < 50) {
-            cpuUsage += 30;
-        } else if (this.metrics.frameRate < 55) {
-            cpuUsage += 20;
-        } else if (this.metrics.frameRate < 58) {
-            cpuUsage += 10;
-        }
-        
-        // Add task-based CPU usage
-        if (this.metrics.responseTime > 1000) {
-            cpuUsage += 25;
-        } else if (this.metrics.responseTime > 500) {
-            cpuUsage += 15;
-        } else if (this.metrics.responseTime > 200) {
-            cpuUsage += 10;
-        }
-        
-        // Add some randomness for simulation
-        cpuUsage += Math.random() * 15;
-        
-        this.resources.cpu.usage = Math.min(100, cpuUsage);
-        this.updateResourceHistory('cpu', this.resources.cpu.usage);
-        this.lastCPUUpdate = now;
-        
-        this.checkResourceLimit('cpu');
-    }
-    
-    updateMemoryUsage() {
-        if (performance.memory) {
-            const memInfo = performance.memory;
-            const usedMemory = memInfo.usedJSHeapSize;
-            const totalMemory = memInfo.totalJSHeapSize;
-            const memoryLimit = memInfo.jsHeapSizeLimit;
-            
-            this.resources.memory.usage = (usedMemory / memoryLimit) * 100;
-            this.updateResourceHistory('memory', this.resources.memory.usage);
-            
-            this.checkResourceLimit('memory');
-        } else {
-            // Fallback estimation
-            const estimatedUsage = 20 + Math.random() * 30;
-            this.resources.memory.usage = estimatedUsage;
-            this.updateResourceHistory('memory', estimatedUsage);
-        }
-    }
-    
-    updateNetworkUsage() {
-        // Estimate network usage based on connection info
-        let networkUsage = 0;
-        
-        if (this.deviceCapabilities.connection) {
-            const connection = this.deviceCapabilities.connection;
-            
-            // Base usage on connection type
-            switch (connection.type) {
-                case 'slow-2g':
-                    networkUsage = 80 + Math.random() * 20;
-                    break;
-                case '2g':
-                    networkUsage = 60 + Math.random() * 20;
-                    break;
-                case '3g':
-                    networkUsage = 40 + Math.random() * 20;
-                    break;
-                case '4g':
-                    networkUsage = 20 + Math.random() * 20;
-                    break;
-                default:
-                    networkUsage = 10 + Math.random() * 20;
-            }
-            
-            // Adjust for save data mode
-            if (connection.saveData) {
-                networkUsage *= 0.5;
-            }
-        } else {
-            // Fallback estimation
-            networkUsage = 15 + Math.random() * 25;
-        }
-        
-        this.resources.network.usage = networkUsage;
-        this.updateResourceHistory('network', networkUsage);
-        
-        this.checkResourceLimit('network');
-    }
-    
-    async updateBatteryStatus() {
+
+    async collectResourceMetrics() {
         try {
-            if (navigator.getBattery) {
-                const battery = await navigator.getBattery();
-                
-                this.resources.battery.level = battery.level * 100;
-                this.resources.battery.charging = battery.charging;
-                this.updateResourceHistory('battery', this.resources.battery.level);
-                
-                this.checkBatteryLevel();
+            // Collect CPU usage (estimated from task execution time)
+            this.currentUsage.cpu = await this.estimateCPUUsage();
+            
+            // Collect memory usage
+            this.currentUsage.memory = await this.getMemoryUsage();
+            
+            // Collect network usage
+            this.currentUsage.network = await this.getNetworkUsage();
+            
+            // Collect storage usage
+            this.currentUsage.storage = await this.getStorageUsage();
+            
+            // Collect battery status
+            this.currentUsage.battery = await this.getBatteryLevel();
+            
+            // Store sample
+            this.metrics.samples.push({
+                timestamp: Date.now(),
+                usage: { ...this.currentUsage }
+            });
+            
+            // Limit sample history
+            if (this.metrics.samples.length > this.metrics.maxSamples) {
+                this.metrics.samples.shift();
             }
+            
         } catch (error) {
-            // Fallback for battery simulation
-            this.resources.battery.level = 85 + Math.random() * 15;
-            this.resources.battery.charging = Math.random() > 0.7;
-            this.updateResourceHistory('battery', this.resources.battery.level);
+            console.error('❌ Failed to collect resource metrics:', error);
         }
     }
-    
-    updateStorageUsage() {
-        if (navigator.storage && navigator.storage.estimate) {
-            navigator.storage.estimate().then(estimate => {
-                this.resources.storage.used = estimate.usage;
-                this.resources.storage.available = estimate.quota;
-                
-                const usagePercent = (estimate.usage / estimate.quota) * 100;
-                this.updateResourceHistory('storage', usagePercent);
-            });
-        }
+
+    async estimateCPUUsage() {
+        // Estimate CPU usage based on task execution frequency and complexity
+        const now = Date.now();
+        const timeSinceLastSample = now - this.metrics.lastSample;
+        this.metrics.lastSample = now;
+        
+        // Simple estimation based on recent activity
+        const recentTasks = stateManager.getState('tasks.recent') || [];
+        const activeTasks = recentTasks.filter(task => task.status === 'running').length;
+        
+        // Estimate: 10% per active task, capped at configured limit
+        const estimated = Math.min(activeTasks * 10, this.limits.maxCpu);
+        
+        return estimated;
     }
-    
-    updateResourceHistory(resource, value) {
-        const history = this.resources[resource].history;
-        history.push({
-            value: value,
-            timestamp: Date.now()
-        });
-        
-        // Keep only recent history
-        if (history.length > this.config.historyLength) {
-            history.shift();
+
+    async getMemoryUsage() {
+        if (this.hardwareAPIs.memory && performance.memory) {
+            const memory = performance.memory;
+            const usedPercent = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
+            return Math.min(usedPercent, this.limits.maxMemory);
         }
         
-        // Update state
-        stateManager.setState(`resources.${resource}`, {
-            ...this.resources[resource],
-            usage: value
-        });
+        // Fallback estimation
+        return Math.min(this.currentUsage.memory + Math.random() * 5, this.limits.maxMemory);
     }
-    
-    checkResourceLimit(resource) {
-        const resourceData = this.resources[resource];
-        const usage = resourceData.usage;
-        const limit = resourceData.limit;
-        
-        const usageRatio = usage / limit;
-        
-        // Check for alert threshold
-        if (usageRatio >= this.config.alertThreshold && this.config.enableAlerts) {
-            this.createAlert(resource, usage, limit, 'warning');
-        }
-        
-        // Check for throttle threshold
-        if (usageRatio >= this.config.throttleThreshold && this.config.enableThrottling) {
-            this.enableThrottling(resource);
-        } else if (usageRatio < this.config.alertThreshold) {
-            this.disableThrottling(resource);
-        }
-        
-        // Emit resource events
-        eventBus.emit('resource:update', {
-            resource: resource,
-            usage: usage,
-            limit: limit,
-            ratio: usageRatio
-        });
-        
-        if (usageRatio >= this.config.throttleThreshold) {
-            eventBus.emit('resource:limit-exceeded', {
-                resource: resource,
-                usage: usage,
-                limit: limit
-            });
-        }
-    }
-    
-    checkBatteryLevel() {
-        const batteryLevel = this.resources.battery.level;
-        
-        if (batteryLevel < 20 && !this.resources.battery.charging) {
-            this.createAlert('battery', batteryLevel, 100, 'critical');
-            eventBus.emit('system:battery-low', { level: batteryLevel });
-        } else if (batteryLevel < 50 && !this.resources.battery.charging) {
-            this.createAlert('battery', batteryLevel, 100, 'warning');
-        }
-    }
-    
-    createAlert(resource, value, limit, severity) {
-        const alert = {
-            id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            resource: resource,
-            value: value,
-            limit: limit,
-            severity: severity,
-            message: this.generateAlertMessage(resource, value, limit, severity),
-            timestamp: Date.now(),
-            dismissed: false
-        };
-        
-        // Avoid duplicate alerts
-        const existingAlert = this.alerts.find(a => 
-            a.resource === resource && 
-            a.severity === severity && 
-            !a.dismissed
-        );
-        
-        if (!existingAlert) {
-            this.alerts.push(alert);
-            console.warn(`⚠️ Resource alert: ${alert.message}`);
+
+    async getNetworkUsage() {
+        if (this.hardwareAPIs.network && navigator.connection) {
+            const connection = navigator.connection;
             
-            eventBus.emit('resource:alert', alert);
+            // Estimate based on connection type and recent network activity
+            const connectionMultiplier = {
+                'slow-2g': 0.1,
+                '2g': 0.3,
+                '3g': 0.5,
+                '4g': 0.7,
+                '5g': 0.9,
+                'wifi': 0.8
+            };
             
-            // Auto-dismiss warning alerts after 30 seconds
-            if (severity === 'warning') {
-                setTimeout(() => {
-                    this.dismissAlert(alert.id);
-                }, 30000);
+            const baseUsage = connectionMultiplier[connection.effectiveType] || 0.5;
+            const recentNetworkActivity = stateManager.getState('network.recentActivity') || 0;
+            
+            return Math.min(baseUsage * 100 + recentNetworkActivity, this.limits.maxNetwork);
+        }
+        
+        // Fallback estimation
+        return Math.min(this.currentUsage.network + Math.random() * 3, this.limits.maxNetwork);
+    }
+
+    async getStorageUsage() {
+        if (this.hardwareAPIs.storage) {
+            try {
+                const estimate = await navigator.storage.estimate();
+                const usedPercent = (estimate.usage / estimate.quota) * 100;
+                return Math.min(usedPercent, this.limits.maxStorage);
+            } catch (error) {
+                console.warn('Could not get storage estimate:', error);
             }
         }
+        
+        // Fallback estimation
+        return Math.min(this.currentUsage.storage + Math.random() * 2, this.limits.maxStorage);
     }
-    
-    generateAlertMessage(resource, value, limit, severity) {
-        const percentage = Math.round((value / limit) * 100);
-        
-        const messages = {
-            cpu: {
-                warning: `High CPU usage: ${Math.round(value)}% (limit: ${limit}%)`,
-                critical: `Critical CPU usage: ${Math.round(value)}% (limit: ${limit}%)`
-            },
-            memory: {
-                warning: `High memory usage: ${Math.round(value)}% (limit: ${limit}%)`,
-                critical: `Critical memory usage: ${Math.round(value)}% (limit: ${limit}%)`
-            },
-            network: {
-                warning: `High network usage: ${Math.round(value)}% (limit: ${limit}%)`,
-                critical: `Critical network usage: ${Math.round(value)}% (limit: ${limit}%)`
-            },
-            battery: {
-                warning: `Low battery: ${Math.round(value)}%`,
-                critical: `Critical battery: ${Math.round(value)}%`
-            }
-        };
-        
-        return messages[resource]?.[severity] || `${resource} ${severity}: ${Math.round(value)}%`;
-    }
-    
-    enableThrottling(resource) {
-        if (this.throttleState[resource]) return;
-        
-        console.log(`🐌 Enabling throttling for ${resource}`);
-        this.throttleState[resource] = true;
-        
-        // Emit throttling events
-        eventBus.emit('resource:throttle-enabled', { resource });
-        
-        // Apply resource-specific throttling
-        switch (resource) {
-            case 'cpu':
-                eventBus.emit('task:throttle-cpu');
-                break;
-            case 'memory':
-                eventBus.emit('task:throttle-memory');
-                break;
-            case 'network':
-                eventBus.emit('task:throttle-network');
-                break;
+
+    async getBatteryLevel() {
+        if (this.battery) {
+            return this.battery.level * 100;
         }
-    }
-    
-    disableThrottling(resource) {
-        if (!this.throttleState[resource]) return;
         
-        console.log(`🚀 Disabling throttling for ${resource}`);
-        this.throttleState[resource] = false;
-        
-        eventBus.emit('resource:throttle-disabled', { resource });
+        // Fallback: assume good battery
+        return 100;
     }
-    
-    startPerformanceMonitoring() {
-        let lastTime = performance.now();
-        let frameCount = 0;
-        
-        const measureFrameRate = () => {
-            const currentTime = performance.now();
-            frameCount++;
-            
-            if (currentTime - lastTime >= 1000) {
-                this.metrics.frameRate = frameCount;
-                frameCount = 0;
-                lastTime = currentTime;
-            }
-            
-            if (this.active) {
-                requestAnimationFrame(measureFrameRate);
-            }
-        };
-        
-        requestAnimationFrame(measureFrameRate);
-    }
-    
-    processPerformanceEntries(entries) {
-        entries.forEach(entry => {
-            if (entry.entryType === 'measure') {
-                this.metrics.responseTime = entry.duration;
-            } else if (entry.entryType === 'navigation') {
-                this.metrics.responseTime = entry.loadEventEnd - entry.loadEventStart;
-            }
-        });
-    }
-    
+
     calculateMetabolicLoad() {
+        // Calculate metabolic load based on resource usage
         const weights = {
             cpu: 0.4,
             memory: 0.3,
             network: 0.2,
-            battery: 0.1
+            storage: 0.1
         };
         
-        let totalLoad = 0;
+        const weightedUsage = 
+            (this.currentUsage.cpu * weights.cpu) +
+            (this.currentUsage.memory * weights.memory) +
+            (this.currentUsage.network * weights.network) +
+            (this.currentUsage.storage * weights.storage);
         
-        Object.keys(weights).forEach(resource => {
-            if (this.resources[resource]) {
-                const usage = this.resources[resource].usage;
-                const limit = this.resources[resource].limit;
-                const normalizedUsage = usage / limit;
-                totalLoad += normalizedUsage * weights[resource];
-            }
+        this.metabolicLoad.current = weightedUsage;
+        
+        // Update history
+        this.metabolicLoad.history.push({
+            timestamp: Date.now(),
+            load: weightedUsage
         });
         
-        this.metrics.metabolicLoad = Math.min(1.0, totalLoad);
+        // Limit history
+        if (this.metabolicLoad.history.length > 100) {
+            this.metabolicLoad.history.shift();
+        }
         
-        // Emit metabolic load update
-        eventBus.emit('resource:metabolic-load', {
-            load: this.metrics.metabolicLoad,
-            timestamp: Date.now()
-        });
+        // Calculate average
+        const recentHistory = this.metabolicLoad.history.slice(-20);
+        this.metabolicLoad.average = recentHistory.reduce((sum, entry) => sum + entry.load, 0) / recentHistory.length;
         
-        return this.metrics.metabolicLoad;
+        // Update peak
+        this.metabolicLoad.peak = Math.max(this.metabolicLoad.peak, weightedUsage);
     }
-    
+
+    checkResourceLimits() {
+        const violations = [];
+        
+        // Check individual resource limits
+        if (this.currentUsage.cpu > this.limits.maxCpu) {
+            violations.push({
+                type: 'cpu',
+                current: this.currentUsage.cpu,
+                limit: this.limits.maxCpu
+            });
+        }
+        
+        if (this.currentUsage.memory > this.limits.maxMemory) {
+            violations.push({
+                type: 'memory',
+                current: this.currentUsage.memory,
+                limit: this.limits.maxMemory
+            });
+        }
+        
+        if (this.currentUsage.network > this.limits.maxNetwork) {
+            violations.push({
+                type: 'network',
+                current: this.currentUsage.network,
+                limit: this.limits.maxNetwork
+            });
+        }
+        
+        // Check metabolic load limit
+        const metabolicLimit = 100 * this.limits.metabolicLimitRatio;
+        if (this.metabolicLoad.current > metabolicLimit) {
+            violations.push({
+                type: 'metabolic_load',
+                current: this.metabolicLoad.current,
+                limit: metabolicLimit
+            });
+        }
+        
+        // Emit violations
+        if (violations.length > 0) {
+            eventBus.emit('resource:limit-violation', { violations });
+            console.warn('⚠️ Resource limit violations detected:', violations);
+        }
+    }
+
+    updateState() {
+        stateManager.setState('resources.current', this.currentUsage);
+        stateManager.setState('resources.metabolicLoad', this.metabolicLoad);
+        stateManager.setState('resources.limits', this.limits);
+        stateManager.setState('resources.monitoring', this.monitoring);
+    }
+
+    aggregateMetrics() {
+        if (this.metrics.samples.length === 0) {
+            return;
+        }
+        
+        // Calculate averages over the interval
+        const recentSamples = this.metrics.samples.slice(-10);
+        const avgUsage = {
+            cpu: recentSamples.reduce((sum, s) => sum + s.usage.cpu, 0) / recentSamples.length,
+            memory: recentSamples.reduce((sum, s) => sum + s.usage.memory, 0) / recentSamples.length,
+            network: recentSamples.reduce((sum, s) => sum + s.usage.network, 0) / recentSamples.length,
+            storage: recentSamples.reduce((sum, s) => sum + s.usage.storage, 0) / recentSamples.length,
+            battery: recentSamples.reduce((sum, s) => sum + s.usage.battery, 0) / recentSamples.length
+        };
+        
+        eventBus.emit('resource:metrics-updated', {
+            timestamp: Date.now(),
+            current: this.currentUsage,
+            average: avgUsage,
+            metabolicLoad: this.metabolicLoad
+        });
+    }
+
     // Event handlers
-    handleTaskStarted(data) {
-        // Increase monitoring frequency during task execution
-        this.config.monitoringInterval = Math.max(500, this.config.monitoringInterval);
+    onTaskStart(event) {
+        const { task } = event.detail;
+        console.log(`📈 Task started - monitoring resource usage: ${task.id}`);
     }
-    
-    handleTaskCompleted(data) {
-        // Return to normal monitoring frequency
-        this.config.monitoringInterval = 1000;
-        
-        // Update efficiency metrics
-        if (data.executionTime) {
-            this.metrics.efficiency = Math.max(0, 100 - (data.executionTime / 10000) * 100);
-        }
+
+    onTaskComplete(event) {
+        const { task, metrics } = event.detail;
+        console.log(`📉 Task completed - resource usage: ${task.id}`, metrics);
     }
-    
-    handleTaskProgress(data) {
-        // Update throughput metrics
-        this.metrics.throughput = data.progress / (Date.now() - data.startTime);
+
+    updateLimits(event) {
+        const { limits } = event.detail;
+        this.limits = { ...this.limits, ...limits };
+        console.log('🔧 Resource limits updated:', this.limits);
+        eventBus.emit('resource:limits-updated', { limits: this.limits });
     }
-    
-    handleWorkerMessage(data) {
-        if (data.data.type === 'resource_usage') {
-            // Update resource usage from worker
-            const usage = data.data.usage;
-            this.resources.cpu.usage = Math.max(this.resources.cpu.usage, usage.cpuTime / 1000);
-            this.resources.memory.usage = Math.max(this.resources.memory.usage, usage.memoryUsage / (1024 * 1024));
-        }
-    }
-    
-    handleLowMemory() {
-        console.log('🧠 Low memory detected, optimizing...');
-        this.optimizeMemory();
-    }
-    
-    handleLowBattery(data) {
-        console.log('🔋 Low battery detected, enabling power saving...');
-        this.enablePowerSaving();
-    }
-    
-    // Optimization methods
-    optimizeResources() {
-        console.log('🔧 Optimizing resources...');
-        
-        this.optimizeMemory();
-        this.optimizeCPU();
-        this.optimizeNetwork();
-        
-        eventBus.emit('resource:optimization-complete');
-    }
-    
-    optimizeMemory() {
-        // Trigger garbage collection if available
-        if (window.gc) {
-            window.gc();
-        }
-        
-        // Clear old resource history
-        Object.keys(this.resources).forEach(resource => {
-            const history = this.resources[resource].history;
-            if (history.length > 50) {
-                history.splice(0, history.length - 50);
-            }
-        });
-        
-        // Emit memory optimization event
-        eventBus.emit('resource:memory-optimized');
-    }
-    
-    optimizeCPU() {
-        // Reduce monitoring frequency
-        this.config.monitoringInterval = Math.min(2000, this.config.monitoringInterval * 1.5);
-        
-        // Emit CPU optimization event
-        eventBus.emit('resource:cpu-optimized');
-    }
-    
-    optimizeNetwork() {
-        // Enable data saving mode
-        eventBus.emit('resource:network-optimized');
-    }
-    
-    enablePowerSaving() {
-        // Reduce monitoring frequency
-        this.config.monitoringInterval = 5000;
-        
-        // Disable non-essential features
-        this.config.enableOptimization = false;
-        
-        // Emit power saving event
-        eventBus.emit('resource:power-saving-enabled');
-    }
-    
-    updateResourceLimits(limits) {
-        Object.keys(limits).forEach(resource => {
-            if (this.resources[resource]) {
-                this.resources[resource].limit = limits[resource];
-            }
-        });
-        
-        // Save to state
-        stateManager.setState('resourceMonitor.limits', limits);
-        
-        eventBus.emit('resource:limits-updated', limits);
-    }
-    
-    dismissAlert(alertId) {
-        const alert = this.alerts.find(a => a.id === alertId);
-        if (alert) {
-            alert.dismissed = true;
-            eventBus.emit('resource:alert-dismissed', alert);
-        }
-    }
-    
-    clearAlerts() {
-        this.alerts.forEach(alert => {
-            alert.dismissed = true;
-        });
-        eventBus.emit('resource:alerts-cleared');
-    }
-    
+
     // Public API
-    getResourceUsage() {
+    getResourceStatus() {
         return {
-            ...this.resources,
-            metrics: this.metrics,
-            metabolicLoad: this.calculateMetabolicLoad()
+            monitoring: this.monitoring,
+            current: this.currentUsage,
+            limits: this.limits,
+            metabolicLoad: this.metabolicLoad,
+            hardwareAPIs: this.hardwareAPIs
         };
     }
-    
-    getResourceHistory(resource, timeRange = 60000) {
-        const history = this.resources[resource]?.history || [];
-        const cutoff = Date.now() - timeRange;
+
+    getCurrentUsage() {
+        return { ...this.currentUsage };
+    }
+
+    getMetabolicLoad() {
+        return { ...this.metabolicLoad };
+    }
+
+    isWithinLimits() {
+        return (
+            this.currentUsage.cpu <= this.limits.maxCpu &&
+            this.currentUsage.memory <= this.limits.maxMemory &&
+            this.currentUsage.network <= this.limits.maxNetwork &&
+            this.metabolicLoad.current <= (100 * this.limits.metabolicLimitRatio)
+        );
+    }
+
+    canExecuteTask(estimatedLoad) {
+        const projectedLoad = this.metabolicLoad.current + estimatedLoad;
+        const metabolicLimit = 100 * this.limits.metabolicLimitRatio;
         
-        return history.filter(entry => entry.timestamp >= cutoff);
+        return projectedLoad <= metabolicLimit;
     }
-    
-    getAlerts() {
-        return this.alerts.filter(alert => !alert.dismissed);
-    }
-    
-    getMetrics() {
+
+    // Health check
+    async healthCheck() {
         return {
-            ...this.metrics,
-            metabolicLoad: this.calculateMetabolicLoad()
-        };
-    }
-    
-    getDeviceCapabilities() {
-        return { ...this.deviceCapabilities };
-    }
-    
-    // Module lifecycle
-    async start() {
-        if (this.active) return;
-        
-        console.log('▶️ Starting Resource Monitor...');
-        this.startMonitoring();
-        
-        eventBus.emit('module:started', {
-            name: this.name,
-            timestamp: Date.now()
-        });
-    }
-    
-    async stop() {
-        if (!this.active) return;
-        
-        console.log('⏹️ Stopping Resource Monitor...');
-        this.stopMonitoring();
-        
-        eventBus.emit('module:stopped', {
-            name: this.name,
-            timestamp: Date.now()
-        });
-    }
-    
-    getStatus() {
-        return {
-            name: this.name,
-            version: this.version,
             initialized: this.initialized,
-            active: this.active,
-            resources: this.resources,
-            metrics: this.metrics,
-            deviceCapabilities: this.deviceCapabilities,
-            alerts: this.getAlerts().length,
-            throttleState: this.throttleState,
-            config: this.config
+            monitoring: this.monitoring,
+            withinLimits: this.isWithinLimits(),
+            hardwareAPIs: this.hardwareAPIs,
+            currentUsage: this.currentUsage,
+            metabolicLoad: this.metabolicLoad.current
         };
+    }
+
+    // Cleanup
+    async shutdown() {
+        await this.stopMonitoring();
+        this.metrics.samples = [];
+        this.metabolicLoad.history = [];
+        console.log('✅ Resource Monitor shutdown complete');
     }
 }
 
-export default ResourceMonitor;
+// Create singleton instance
+const resourceMonitor = new ResourceMonitor();
+
+export default resourceMonitor;
