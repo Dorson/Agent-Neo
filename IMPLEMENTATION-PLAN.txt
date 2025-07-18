@@ -90,15 +90,23 @@ Manage the creation and use of a user-controlled recovery kit.
 Generate and publish updates to the agent's DID Document.
 Dependencies: src/core/crypto.js, src/data/indexedDb.js, src/core/eventBus.js, src/networking/p2pService.js (for publishing DID docs).
 Implementation Steps & Sub-steps for identityManager.js
+
+
+
 Sub-step 7.1: Initial Identity Creation (Onboarding)
+
 7.1.1: Generate Identity Key: In crypto.js, create a function to generate a long-lived BLS key pair. This will be the Agent Identity Key.
+
 7.1.2: Derive DID: Create a utility function to derive the agent's persistent DID from the public part of the Agent Identity Key (e.g., did:neo:<hash_of_public_key>).
 7.1.3: User Password Prompt: Create a UI flow that prompts the user to set a strong, high-entropy password.
+
 7.1.4: Encrypt Identity Key: Use the new password to encrypt the Agent Identity Key (PBKDF2 + AES-GCM). Store the resulting encryptedIdentityKeyBlob in IndexedDB.
 7.1.5: WebAuthn/Passkey Registration: Trigger navigator.credentials.create() to register the user's device. Store the resulting credentialId in IndexedDB. This creates the User Authentication Key.
+
 7.1.6: Initial Key Rotation: Immediately call the "Key Renewal" logic (Sub-step 7.3) to generate the first Agent Operational Key and its corresponding certificate.
 7.1.7: Initial DID Document: Generate the first version of the agent's DID Document, including both the Identity and new Operational public keys. Publish it to the network via p2pService.js.
 7.1.8: Recovery Kit Prompt: After successful setup, immediately and strongly prompt the user to create their Recovery Kit (Sub-step 7.5).
+
 Sub-step 7.2: Session Unlock Flow (Login)
 7.2.1: Implement isUnlocked(): A function that checks if the plaintext operational key is currently in memory.
 7.2.2: Implement unlockSession():
@@ -106,18 +114,24 @@ Trigger a navigator.credentials.get() WebAuthn prompt using the stored credentia
 On success, prompt the user for their password.
 Use the password to decrypt the encryptedIdentityKeyBlob.
 If the current Agent Operational Key is expired or missing, trigger the "Key Renewal" flow (Sub-step 7.3).
+
 If the Operational Key is still valid, simply load it into memory.
 Wipe the password and Identity Key from memory, leaving only the Operational Key.
 Dispatch an identity:unlocked event on the eventBus.
 7.2.3: Implement lockSession(): A function to wipe the in-memory operational key, called on tab close or inactivity timeout.
+
+
 Sub-step 7.3: Time-Sensitive Key Rotation (Key Renewal)
 7.3.1: Generate Operational Key: In crypto.js, create a function to generate a new BLS key pair. This will be the short-lived Agent Operational Key.
 7.3.2: Create Operational Certificate:
 Define the JSON structure for the certificate (agentDID, operationalPublicKey, validFrom, validUntil).
+
 Create a function that takes the Agent Identity Key and the new Operational Public Key, constructs the certificate, and signs it with the Identity Key.
 7.3.3: Encrypt and Store Operational Key: Encrypt the new Operational Private Key (using the user's password or a derived key) and store it alongside its signed certificate in IndexedDB.
 7.3.4: Update DID Document: Create a new version of the DID Document, replacing the old operational key and certificate CID with the new ones.
 7.3.5: Publish DID Document Update: Sign the new DID Document with the Agent Identity Key and publish the update to the network.
+
+
 Sub-step 7.4: Secure Password Change
 7.4.1: Create UI Flow: Design a "Change Password" screen in the settings.
 7.4.2: Implement changePassword(oldPassword, newPassword) function:
@@ -126,6 +140,7 @@ Use oldPassword to decrypt the encryptedIdentityKeyBlob. Fail if incorrect.
 If successful, immediately re-encrypt the plaintext Identity Key using newPassword.
 Atomically overwrite the old blob in IndexedDB with the new one.
 Wipe all plaintext keys and passwords from memory.
+
 Sub-step 7.5: Account Recovery Kit
 7.5.1: Generate Recovery Phrase: Integrate a library (e.g., a lightweight BIP-39 implementation) to generate a 12 or 24-word mnemonic phrase.
 7.5.2: Implement createRecoveryKit():
@@ -139,6 +154,7 @@ Prompts the user to upload their recovery kit file and enter their recovery phra
 Uses the phrase to decrypt the key from the file.
 If successful, immediately prompts the user to set a new password.
 Uses the new password to encrypt the recovered Identity Key and saves it to IndexedDB, overwriting any old data. The user is now recovered and can log in normally.
+
 Sub-step 7.6: Message Signing and Verification
 7.6.1: Update crypto.js sign() method: This method should now use the in-memory Operational Key by default. It should also package the message, the signature, and the current Operational Certificate together for transmission.
 
@@ -176,9 +192,9 @@ Dependencies: src/core/config.js.
 
 Step 10: src/core/utils.js
 
-Purpose: Collection of general-purpose utility functions.
+Purpose: General-purpose utility manger that can load utility modules.
 
-Responsibilities: Common helpers like data validation, deep cloning, object merging, time utilities, data serialization/deserialization (e.g., for JSON-LD structures), and basic data structure manipulations.
+Responsibilities: Common modukles like data validation, deep cloning, object merging, time utilities, data serialization/deserialization (e.g., for JSON-LD structures), and basic data structure manipulations.
 
 Dependencies: None.
 
@@ -583,8 +599,15 @@ Step 22.1 (Sub-step for BitTorrent v2 Metadata Storage): Implement storage and r
 
 Dependencies: src/data/indexedDb.js, src/core/crypto.js, src/core/identity.js, src/networking/p2pService.js, src/networking/dataTransport.js, src/core/eventBus.js.
 
+
+
+
+----- Milestone ----------
+
+
 Phase 5: Agent Intelligence & Self-Improvement
 This phase integrates the AI's decision-making, learning, and self-reflection capabilities. The "AI" here refers to sophisticated algorithms and heuristics running natively in JS, potentially leveraging Web Workers for performance.
+
 
 Step 23: src/modules/ai/planner.js
 
@@ -1477,6 +1500,18 @@ Integrate with skillValidator.js to use this manifest for static analysis and ru
 Integrate with proprioceptionModule.js to verify actual resource usage against declared usage.
 
 Dependencies: src/core/utils.js, src/modules/skillValidator.js, src/modules/proprioceptionModule.js.
+
+
+Step 41.1:  Monetization setup.
+
+Paste META monetization tag between the <head> and </head> tags of index.html
+<meta name="google-adsense-account" content="ca-pub-4474517920379816">
+
+Paste monetization script inside of index.html
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4474517920379816"  crossorigin="anonymous"></script>
+
+
 
 Step 42: src/ui/components/settingsPanel.js
 
