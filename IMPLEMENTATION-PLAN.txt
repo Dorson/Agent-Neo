@@ -1,0 +1,1607 @@
+Agent Neo DApp: Enhanced Comprehensive Implementation Plan
+
+This document outlines a significantly enhanced and refined implementation plan for the Agent Neo Decentralized Application (DApp). It builds upon the foundational concepts of the whitepaper and the initial plan, integrating advanced cryptographic primitives, sophisticated decentralized networking paradigms, robust local data management strategies, and cutting-edge AI learning mechanisms, all within the constraints of native web technologies. The plan is structured to ensure a logical progression of development, emphasizing security, performance, scalability, and true self-evolution.
+
+Phase 1: The Unshakeable Foundation & Advanced Cryptography
+This phase establishes the core utilities, secure identity management, and advanced cryptographic primitives essential for the DApp's decentralized and secure operation.
+
+Step 1: /index.html
+
+Purpose: The single HTML entry point for the DApp.
+
+Responsibilities: Define the basic HTML5 structure, link to main.css, load app.js as a module, and define the core layout containers (<div id="app-container">, etc.).
+
+Dependencies: None.
+
+Step 2: public/css/main.css
+
+Purpose: Global styling, layout, and theming.
+
+Responsibilities: Implement a CSS reset (e.g., Normalize.css principles), define CSS Variables for consistent theming (colors, fonts, spacing), use Flexbox/Grid for responsive layout, and establish a BEM-like naming convention for maintainability. Ensure accessibility considerations (contrast, focus states).
+
+Dependencies: None.
+
+Step 3: src/core/config.js
+
+Purpose: Centralized, read-only application configuration.
+
+Responsibilities: Export constants: database name/version, default resource limits, initial js-libp2p bootstrap peer addresses, log levels, default guild parameters (e.g., minimum members, vote threshold), cryptographic parameters (e.g., BLS curve selection).
+
+New Responsibility: Export jsLibrarySeedUrls - an array of initial URLs pointing to popular JavaScript libraries or websites known to contain significant JavaScript code. This list will be used to bootstrap the agent's initial knowledge base.
+
+New Responsibility: Define initial GLOBAL_RESOURCE_ACCESS_TOKENS limits for external APIs (e.g., maxSearchApiCallsPerHour).
+
+Dependencies: None.
+
+Step 4: src/core/eventBus.js
+
+Purpose: The architectural lynchpin for decoupled inter-module communication.
+
+Responsibilities: Instantiate and export a single, global EventTarget instance. Provide on(eventName, handler), off(eventName, handler), and emit(eventName, data) methods. Ensure event data is immutable where possible.
+
+Dependencies: None.
+
+Step 5: src/data/indexedDb.js
+
+Purpose: Provide a robust, asynchronous wrapper for IndexedDB operations, abstracting away complexities.
+
+Responsibilities: Handle database opening, versioning, object store creation (for ledger, trust lists, knowledge chunks, DIDs, keys, session context), and provide generic utility functions for put, get, delete, getAll, and query operations with error handling. Implement transaction management for atomic operations.
+
+Dependencies: None.
+
+Step 6: src/core/crypto.js
+
+Purpose: Implement advanced cryptographic primitives, specifically focusing on BLS signatures, secure hashing, and Zero-Knowledge Proofs.
+
+Responsibilities:
+
+BLS Key Pair Generation: Functions to generate BLS key pairs (private and public keys) suitable for ring signatures and individual signing, leveraging Web Cryptography API or a suitable native JS BLS library (e.g., noble-bls12-381 or similar, if a purely native implementation is too complex, this would be the only external dependency considered for this specific, critical functionality).
+
+BLS Signing: Function to sign a message (e.g., a hash of data) using a BLS private key.
+
+BLS Verification: Function to verify a BLS signature using the corresponding public key.
+
+BLS Ring Signatures: Implement the logic for generating and verifying BLS ring signatures, where a message is signed by one member of a set (the ring) without revealing which member signed it. Crucial for anonymous voting in guilds and skill module meta-flags.
+
+Hashing: Implement SHA-256 and SHA-512 hashing functions for data integrity, content addressing, and message digests.
+
+Key Derivation/Encryption: Functions for securely deriving keys or encrypting private keys before storage in IndexedDB (e.g., using PBKDF2 and AES-GCM).
+
+Zero-Knowledge Proofs (zk-STARKs): Implement a lightweight, native JS (possibly WASM-compiled) library for generating and verifying zk-STARKs. This is critical for computationalGuild.js (proof of computation), dataStorageGuild.js (proof of storage), and exteroceptionModule.js (privacy-preserving exteroception).
+
+Step 6.1 : Research and select a suitable, performant, and audited native JavaScript or WebAssembly (WASM) library for zk-STARKs generation and verification. Document the rationale for selection, including performance benchmarks and security audits. Integrate the chosen library into the module.
+
+Step 6.2: Research and select a suitable, performant, and audited native JavaScript or WebAssembly (WASM) library for BLS signatures. Document the rationale for selection. Integrate the chosen library into the module.
+
+Step 6.3: Implement recursive zk-STARKs functionality, allowing proofs of individual computations (e.g., for data chunks, small computational problems) to be aggregated into a single, compact "proof of proofs" for efficient network transmission and verification.
+
+Dependencies: None (ideally native Web Cryptography API + custom BLS/ZK-STARK implementation, or minimal, audited native JS libraries).
+
+
+Step 7 : src/core/identityManager.js
+Purpose: Manage the agent's full identity lifecycle, including a persistent DID, rotating operational keys, secure user authentication, and account recovery. This module is the central authority for all cryptographic identity operations.
+Responsibilities:
+Orchestrate the creation of a new agent identity.
+Manage the secure storage and retrieval of all cryptographic keys.
+Handle the session "unlock" flow, combining WebAuthn and password authentication.
+Implement the key rotation mechanism for short-lived operational keys.
+Provide a secure password change workflow.
+Manage the creation and use of a user-controlled recovery kit.
+Generate and publish updates to the agent's DID Document.
+Dependencies: src/core/crypto.js, src/data/indexedDb.js, src/core/eventBus.js, src/networking/p2pService.js (for publishing DID docs).
+Implementation Steps & Sub-steps for identityManager.js
+Sub-step 7.1: Initial Identity Creation (Onboarding)
+7.1.1: Generate Identity Key: In crypto.js, create a function to generate a long-lived BLS key pair. This will be the Agent Identity Key.
+7.1.2: Derive DID: Create a utility function to derive the agent's persistent DID from the public part of the Agent Identity Key (e.g., did:neo:<hash_of_public_key>).
+7.1.3: User Password Prompt: Create a UI flow that prompts the user to set a strong, high-entropy password.
+7.1.4: Encrypt Identity Key: Use the new password to encrypt the Agent Identity Key (PBKDF2 + AES-GCM). Store the resulting encryptedIdentityKeyBlob in IndexedDB.
+7.1.5: WebAuthn/Passkey Registration: Trigger navigator.credentials.create() to register the user's device. Store the resulting credentialId in IndexedDB. This creates the User Authentication Key.
+7.1.6: Initial Key Rotation: Immediately call the "Key Renewal" logic (Sub-step 7.3) to generate the first Agent Operational Key and its corresponding certificate.
+7.1.7: Initial DID Document: Generate the first version of the agent's DID Document, including both the Identity and new Operational public keys. Publish it to the network via p2pService.js.
+7.1.8: Recovery Kit Prompt: After successful setup, immediately and strongly prompt the user to create their Recovery Kit (Sub-step 7.5).
+Sub-step 7.2: Session Unlock Flow (Login)
+7.2.1: Implement isUnlocked(): A function that checks if the plaintext operational key is currently in memory.
+7.2.2: Implement unlockSession():
+Trigger a navigator.credentials.get() WebAuthn prompt using the stored credentialId.
+On success, prompt the user for their password.
+Use the password to decrypt the encryptedIdentityKeyBlob.
+If the current Agent Operational Key is expired or missing, trigger the "Key Renewal" flow (Sub-step 7.3).
+If the Operational Key is still valid, simply load it into memory.
+Wipe the password and Identity Key from memory, leaving only the Operational Key.
+Dispatch an identity:unlocked event on the eventBus.
+7.2.3: Implement lockSession(): A function to wipe the in-memory operational key, called on tab close or inactivity timeout.
+Sub-step 7.3: Time-Sensitive Key Rotation (Key Renewal)
+7.3.1: Generate Operational Key: In crypto.js, create a function to generate a new BLS key pair. This will be the short-lived Agent Operational Key.
+7.3.2: Create Operational Certificate:
+Define the JSON structure for the certificate (agentDID, operationalPublicKey, validFrom, validUntil).
+Create a function that takes the Agent Identity Key and the new Operational Public Key, constructs the certificate, and signs it with the Identity Key.
+7.3.3: Encrypt and Store Operational Key: Encrypt the new Operational Private Key (using the user's password or a derived key) and store it alongside its signed certificate in IndexedDB.
+7.3.4: Update DID Document: Create a new version of the DID Document, replacing the old operational key and certificate CID with the new ones.
+7.3.5: Publish DID Document Update: Sign the new DID Document with the Agent Identity Key and publish the update to the network.
+Sub-step 7.4: Secure Password Change
+7.4.1: Create UI Flow: Design a "Change Password" screen in the settings.
+7.4.2: Implement changePassword(oldPassword, newPassword) function:
+First, require a successful WebAuthn authentication.
+Use oldPassword to decrypt the encryptedIdentityKeyBlob. Fail if incorrect.
+If successful, immediately re-encrypt the plaintext Identity Key using newPassword.
+Atomically overwrite the old blob in IndexedDB with the new one.
+Wipe all plaintext keys and passwords from memory.
+Sub-step 7.5: Account Recovery Kit
+7.5.1: Generate Recovery Phrase: Integrate a library (e.g., a lightweight BIP-39 implementation) to generate a 12 or 24-word mnemonic phrase.
+7.5.2: Implement createRecoveryKit():
+Requires the user to be fully logged in (unlocked session).
+Generates a new recovery phrase and displays it to the user with strong warnings to write it down.
+Uses the recovery phrase as a password to create a second, separate encryption of the Agent Identity Key.
+Packages this new encrypted blob and non-sensitive metadata into a JSON file (AgentNeo-Recovery-Kit.json) and provides it for download.
+7.5.3: Implement recoverAccount():
+Create a UI flow accessible from the login screen.
+Prompts the user to upload their recovery kit file and enter their recovery phrase.
+Uses the phrase to decrypt the key from the file.
+If successful, immediately prompts the user to set a new password.
+Uses the new password to encrypt the recovered Identity Key and saves it to IndexedDB, overwriting any old data. The user is now recovered and can log in normally.
+Sub-step 7.6: Message Signing and Verification
+7.6.1: Update crypto.js sign() method: This method should now use the in-memory Operational Key by default. It should also package the message, the signature, and the current Operational Certificate together for transmission.
+
+7.6.2: Update crypto.js verify() method: This method must now perform the full 3-step verification:
+Verify the certificate's timestamp.
+Verify the certificate's signature against the sender's public Identity Key (fetched from their DID Document).
+Verify the message's signature against the public Operational Key inside the certificate.
+
+
+Step 8: src/core/webWorkers.js
+
+Purpose: Centralized management and orchestration of Web Workers for offloading computationally intensive tasks.
+
+Responsibilities:
+
+Provide a generic interface for creating and managing Web Worker instances.
+
+Implement message passing patterns for sending data to workers and receiving results.
+
+Specifically, offload cryptographic operations (BLS key generation, signing, verification, ring signature generation, ZKP generation/verification) and complex AI computations (e.g., PSL inference, subgraph mining, federated learning updates) to workers to prevent UI blocking.
+
+Handle worker lifecycle (creation, termination, error handling).
+
+New Responsibility: Implement "Micro-Execution Environments" for tools and skill modules, dynamically loading code into new workers and terminating them post-execution, with strict message passing interfaces and resource monitoring hooks.
+
+Dependencies: None (uses native Worker API).
+
+Step 9: src/core/logger.js
+
+Purpose: Centralized logging utility for debugging and monitoring, with configurable verbosity.
+
+Responsibilities: Provide methods for different log levels (debug, info, warn, error) that can be configured via config.js. Implement log rotation or size limits for persistent logs.
+
+Dependencies: src/core/config.js.
+
+Step 10: src/core/utils.js
+
+Purpose: Collection of general-purpose utility functions.
+
+Responsibilities: Common helpers like data validation, deep cloning, object merging, time utilities, data serialization/deserialization (e.g., for JSON-LD structures), and basic data structure manipulations.
+
+Dependencies: None.
+
+Phase 2: Decentralized Communication & Advanced Data Transport
+This phase establishes the agent's ability to communicate securely and efficiently, including robust peer-to-peer networking and large data transfers using BitTorrent v2 principles.
+
+Step 11: src/networking/messageProtocol.js
+
+Purpose: Define the standardized, versioned message formats and protocols for inter-agent communication.
+
+Responsibilities: Define message types (e.g., PING, TASK_REQUEST, GUILD_INVITE, GUILD_VOTE, KNOWLEDGE_QUERY, KNOWLEDGE_CHUNK, ZKP_PROOF, TRUST_REPORT), their payloads (using JSON-LD for semantic interoperability), and strict serialization/deserialization logic. Include fields for sender DID, timestamp, and signature.
+
+New Responsibility: Define meta flags for data packages and skill modules, including their structure for aggregated BLS ring signatures (e.g., favorite_count, safe_count, spam_count).
+
+Dependencies: src/core/identity.js, src/core/crypto.js.
+
+Step 12: src/networking/p2pService.js
+
+Purpose: Initialize and manage the js-libp2p instance, handling peer discovery, connection management, message routing, and implementing the "Service Tiers" middleware.
+
+Responsibilities:
+
+Libp2p Initialization: Initialize js-libp2p using config.js for bootstrap peers, DHT (Kademlia) for peer discovery, and WebSockets/WebRTC for transport.
+
+Connection Management: Establish and maintain persistent connections with trusted peers, and ephemeral connections with others.
+
+Protocol Handlers: Register handlers for various messageProtocol.js types, routing incoming messages to eventBus.js.
+
+Service Tiers Middleware: Implement a custom js-libp2p stream handler or middleware. Before processing any incoming message/stream, this middleware will:
+
+Verify the sender's DID and signature using identity.js and crypto.js.
+
+Query guildMembership.js to determine the sender's trust level (HIGH_TRUST, LOW_TRUST, UNKNOWN).
+
+If LOW_TRUST or UNKNOWN, introduce a configurable setTimeout delay before forwarding the message to the internal event bus. If the message is critical (e.g., a guild vote from a known member), it might bypass this delay.
+
+Handle message decryption/encryption if secure channels are required beyond transport layer security (using crypto.js for symmetric encryption with keys derived from guild membership).
+
+Message Sending: Provide methods for sending signed messages to specific peers or broadcasting messages, ensuring messages are signed by the agent's DID.
+
+New Responsibility: Implement "GossipSub Peer Scoring" to track peer behavior, penalizing nodes that send malformed data or behave erratically, and automatically disconnecting low-scoring peers.
+
+New Responsibility: Support "Super-Peer" or "Relay Node" designation for high-reputation nodes to assist with peer discovery and NAT traversal, incentivized via economy.js.
+
+Dependencies: src/core/config.js, src/core/eventBus.js, src/networking/messageProtocol.js, src/core/identity.js, src/core/crypto.js, src/modules/guilds/guildMembership.js.
+
+Step 13: src/networking/networkMonitor.js
+
+Purpose: Monitor the agent's network connectivity, peer status, and overall network health.
+
+Responsibilities: Listen for js-libp2p events (peer connected, peer disconnected, protocol discovered), update network status in stateManager.js, and dispatch events on eventBus.js (e.g., network:peer_connected, network:status_changed).
+
+New Responsibility: Continuously monitor latency and bandwidth of established connections, feeding data to networkTopologyOptimizer.js.
+
+Dependencies: src/core/eventBus.js, src/networking/p2pService.js, src/core/stateManager.js.
+
+Step 14: src/networking/dataTransport.js
+
+Purpose: Handle efficient, large-scale data transfers using principles inspired by BitTorrent v2 (content addressing, piece-wise transfer, deduplication, and advanced peer interaction).
+
+Responsibilities:
+
+Content Addressing: Given any data, generate a unique content hash (e.g., SHA-256) as its identifier.
+
+Chunking & Merkle Trees: Divide large files/data into smaller, fixed-size chunks. Construct and verify Merkle trees for entire files/datasets to ensure integrity of all chunks (BitTorrent v2 specific).
+
+Piece-wise Transfer Protocol: Implement a robust protocol for requesting, sending, and managing individual chunks over p2pService.js, including:
+
+Handshake & Bitfield Exchange: Initialize communication with peers, exchanging bitfields to indicate available pieces.
+
+Request/Piece Messages: Send request messages for missing pieces and piece messages for available pieces.
+
+Choke/Unchoke Algorithm: Implement a simple tit-for-tat mechanism to manage upload/download bandwidth and incentivize sharing.
+
+Piece Selection Strategy: Implement strategies like "rarest first" to prioritize downloading pieces that are less common in the network, improving overall swarm health.
+
+Deduplication: Store chunks in IndexedDB (via indexedDb.js) based on their content hash, avoiding redundant storage.
+
+Verification: Verify the integrity of received chunks using their content hashes and the Merkle tree root hash.
+
+Seeding/Leeching: Provide methods for "seeding" (making local chunks available) and "leeching" (requesting missing chunks from peers).
+
+Progress Tracking: Track download/upload progress for individual files/datasets.
+
+New Responsibility: Integrate Fountain Codes (e.g., using a native JS implementation of Luby Transform codes) as an underlying mechanism for data chunk selection and replication, enhancing data diversity and streamlined repair/replication.
+
+New Responsibility: Implement encryption for all data transfers by default, leveraging crypto.js and shared keys from guildManagement.js or identity.js.
+
+Step 14.1: Implement the BitTorrent v2 handshake protocol for peer negotiation and initial bitfield exchange.
+
+Step 14.2: Develop robust piece selection algorithms (e.g., rarest first, end-game mode) to optimize download efficiency and network health.
+
+Step 14.3: Implement the choke/unchoke algorithm to manage upload/download slots and incentivize sharing among peers.
+
+Dependencies: src/core/crypto.js, src/data/indexedDb.js, src/networking/p2pService.js, src/core/eventBus.js.
+
+Phase 3: Core Agent Logic & Immutable Local Ledger
+This phase builds the fundamental operational components and the secure, cryptographically verifiable local data store.
+
+Step 15: src/core/stateManager.js
+
+Purpose: Centralized management of the agent's mutable runtime state.
+
+Responsibilities: Store and provide reactive access to the agent's current operational state (e.g., active tasks, current reputation score, network status, guild membership, active session context). Implement observer patterns to notify modules of state changes.
+
+Dependencies: src/core/eventBus.js.
+
+Step 16: src/core/taskScheduler.js
+
+Purpose: Manage the execution and prioritization of agent tasks, leveraging Web Workers for execution.
+
+Responsibilities: Queue tasks, execute them based on priority and resource availability (resourceManager.js), dispatch tasks to webWorkers.js for execution, and notify eventBus.js upon task completion or failure. Handle task retry logic.
+
+New Responsibility: Implement "Tiered Task Consensus" by routing tasks through different verification pathways based on a task_tier field (micro, standard, high_value) in the task bounty.
+
+Dependencies: src/core/eventBus.js, src/data/resourceManager.js, src/core/webWorkers.js.
+
+Step 17: src/data/localLedger.js
+
+Purpose: Implement an append-only, cryptographically verifiable local ledger for all economic actions and significant agent events, forming an immutable chain (Micro-Blockchain).
+
+Responsibilities:
+
+addEntry(data) Method:
+
+Take raw event data (e.g., task_completed, reward_received, trust_update, skill_module_meta_flag_signed).
+
+Serialize data to a canonical format (e.g., JSON string).
+
+Retrieve the hash of the last entry in the ledger (or a genesis hash if empty).
+
+Construct a new ledger entry object containing: timestamp, agentDID, data, previousEntryHash, entryHash (hash of all preceding fields), and signature (BLS signature of entryHash by agentDID).
+
+Sign the entryHash using the agent's private BLS key via crypto.js and identity.js.
+
+Persist this fully formed, signed, and chained entry in IndexedDB via indexedDb.js.
+
+verifyIntegrity() Method: Iterate through all entries in the ledger, re-hashing each entry and verifying its BLS signature and the previousEntryHash link to ensure tamper-proof storage. Report any inconsistencies.
+
+Querying: Provide methods to query the ledger (e.g., get all entries, get entries by type, get entries within a time range).
+
+Event Dispatch: Dispatch ledger:entry_added events on eventBus.js after successful addition.
+
+Dependencies: src/data/indexedDb.js, src/core/crypto.js, src/core/identity.js, src/core/eventBus.js.
+
+Step 18: src/data/resourceManager.js
+
+Purpose: Track and manage the agent's local computational resources (e.g., CPU utilization, memory, storage, network bandwidth).
+
+Responsibilities: Provide real-time resource usage data (e.g., using navigator.deviceMemory, PerformanceObserver for CPU), enforce resource limits defined in config.js, and notify eventBus.js of resource constraints or availability changes.
+
+New Responsibility: Integrate direct hardware API access (Battery Status API, Network Information API, navigator.deviceMemory) to provide granular, real-time device status for resourceBalancer.js.
+
+Dependencies: src/core/config.js, src/core/eventBus.js.
+
+Phase 4: Guilds, Economy & Knowledge Management
+This phase integrates the sophisticated guild system, the proof-of-performance economy, and decentralized knowledge persistence and distribution.
+
+Step 19: src/modules/guilds/guildManager.js
+
+Purpose: Overall orchestration of dynamic guild formation, discovery, and invitation processes.
+
+Responsibilities:
+
+Implement the "ping-based guild formation" logic. Agents periodically ping nearby peers via p2pService.js.
+
+If trust criteria are met (via guildMembership.js), send GUILD_INVITE messages.
+
+Oversee the dynamic GUILD formation logic, allowing new nodes to form guilds if existing ones are full, promoting diversity.
+
+Coordinate with guildMembership.js for updates to trust lists based on discovery and invitations.
+
+Dependencies: src/core/eventBus.js, src/networking/p2pService.js, src/modules/guilds/guildMembership.js, src/core/config.js.
+
+Step 19.1: src/modules/guilds/guildMembership.js
+
+Purpose: Manage guild membership, trust lists, and the temporary banned list.
+
+Responsibilities:
+
+Maintain HIGH_TRUST (top 300 members with trust score >= 20) and LOW_TRUST (up to 30 new members) lists (storing DIDs and dynamic trust scores) in IndexedDB (indexedDb.js).
+
+Update these lists based on economic performance (economy.js), guild votes (guildVoting.js), and continuous proof-of-work/service (guildTrustVerifier.js).
+
+Maintain a temporary "banned list" (up to 100 DIDs, expiring after 2 weeks/1 hour for request flooding) for nodes exhibiting malicious or non-cooperative behavior.
+
+Provide methods for p2pService.js to query the trust level of a given DID.
+
+New Responsibility: Implement GUILD_SERVICE_REQUEST delays for LOW_TRUST members (e.g., 20s for computational, 5s for data transfer) and non-guild members (60s delay, limited requests), incentivizing participation. This logic can be directly queried by p2pService.js's middleware.
+
+Dependencies: src/data/indexedDb.js, src/core/eventBus.js, src/core/config.js.
+
+Step 19.2: src/modules/guilds/guildVoting.js
+
+Purpose: Handle decentralized voting mechanisms within guilds using BLS ring signatures.
+
+Responsibilities:
+
+When a guild decision is needed (e.g., new member, policy change), create a vote proposal.
+
+Members generate BLS ring signatures for their vote (Yes/No) using crypto.js, including the DIDs of all current guild members in the ring.
+
+Vote messages are sent via p2pService.js.
+
+Verify incoming ring signatures using crypto.js and tally votes.
+
+Record vote outcomes in localLedger.js.
+
+Event Dispatch: Dispatch guild:vote_result events on eventBus.js.
+
+Dependencies: src/core/eventBus.js, src/data/localLedger.js, src/core/crypto.js, src/networking/p2pService.js, src/modules/guilds/guildMembership.js.
+
+Step 19.3: src/modules/guilds/guildTrustVerifier.js
+
+Purpose: Implement the "Proof of Work" verification and continuous trust score updates for guild members.
+
+Responsibilities:
+
+Implement a "Proof of Work" verification method for guild members, where correct network health pings, valid data package transfers, and cryptographically verified computational results count as proof of work, updating trust scores in guildMembership.js.
+
+Implement a daily trust report exchange with top 10 trusted guild peers, with a penalty for excessive requests.
+
+Coordinate with dataStorageGuild.js, computationalGuild.js, and dataTransmissionGuild.js to receive proof-of-work/service data.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildMembership.js, src/core/crypto.js, src/data/localLedger.js, src/networking/p2pService.js.
+
+Step 19.4: src/modules/guilds/cryptographicClusterManager.js
+
+Purpose: Coordinate the formation and management of "CRYPTOGRAPHIC RING TRUST CLUSTERs" for advanced, privacy-preserving computations, and manage their hierarchical evolution.
+
+Responsibilities:
+
+Cluster Formation & Selection: Coordinate CRYPTOGRAPHIC RING TRUST CLUSTER formation and selection for federated learning rounds and secure multi-party computation. Initial entry into Level 1 clusters is based on sustained HIGH_TRUST status (e.g., 10 days at score 100 from guildMembership.js) and consistent participation in general guild activities.
+
+Step 19.5 (Sub-step for Cluster Formation Request Logic): Implement the logic for an Agent Neo node to identify eligible peers (e.g., those with 10+ days of score 100 in HIGH_TRUST lists) and proactively send "Ring TRUST CLUSTER formation requests." Define the internal trust validation and participation limits (max 10 cluster memberships) for a node to agree to join a new cluster.
+
+Hierarchical Evolution (Level Up):
+
+Criteria for Level Up: Nodes within a Ring TRUST CLUSTER can propose to form a higher-level cluster (e.g., Level 2 from Level 1) if they collectively demonstrate:
+
+Sustained High Performance: Consistent successful completion of high-value tasks within their current cluster (e.g., successful federated learning rounds, complex ZKP computations).
+
+Zero Slashing Events: No members of the cluster have incurred slashing penalties for a defined period.
+
+Exceptional Resource Contribution: Documented and verified contributions of significant computational or storage resources to the network.
+
+Consensus on Ethical Adherence: Consistent positive ethical evaluations from ethicsModule.js and proprioceptionModule.js.
+
+Proposal & Voting: The proposal for a level-up must be initiated by a quorum of existing cluster members and then ratified by a supermajority vote (e.g., 80%) of the next higher level of Ring TRUST CLUSTERs (if they exist) or by the governance.js module if no higher level exists yet. This prevents self-promotion without external validation.
+
+New Privileges/Responsibilities: Higher-level clusters gain:
+
+Increased Influence: Greater weight in network-wide governance votes (via governance.js).
+
+Access to Sensitive Tasks: Eligibility for more critical or privacy-sensitive computational tasks (e.g., core protocol evolution, highly sensitive data analysis).
+
+Core Protocol Stewardship: Potential roles in proposing and validating changes to the selfEvolvingProtocolRegistry.js.
+
+Enhanced Resource Allocation: Priority access to GLOBAL_RESOURCE_ACCESS_TOKENS (GRATs) managed by economy.js.
+
+Leadership Roles: Members may be eligible for "diplomat" roles in networkPartitionReconciliation.js.
+
+Limit on Memberships: Implement a limit of 10 Ring TRUST CLUSTER memberships per node across all levels to prevent over-centralization.
+
+Secure Multi-Party Computation (MPC): Work with crypto.js for MPC, Distributed Key Generation (DKG), and Threshold Signatures within clusters, enabling collaborative AI model training (federatedLearner.js) or inferences on private data without revealing individual inputs.
+
+Step 19.6 (Sub-step for Specific MPC/DKG/Threshold Sig Implementation): Implement Secure Multi-Party Computation (MPC) protocols (leveraging crypto.js) to enable collaborative AI model training (with federatedLearner.js) or inferences on private data within a cluster without revealing individual inputs. Implement Distributed Key Generation (DKG) and Threshold Signature schemes (leveraging crypto.js) for joint key generation and quorum-based decision signing within clusters. Implement Verifiable Aggregation methods for combining gradients in federated learning or partial inferences, with cryptographic proof of correct aggregation.
+
+Data Provisioning: Oversee data provisioning for critical AI models or sensitive knowledge graph parts within clusters, leveraging verifiable secret sharing or Fountain-encoded streams.
+
+Downgrade/Dissolution: Implement mechanisms for clusters to be downgraded or dissolved if they fail to meet sustained performance criteria or incur significant penalties, ensuring accountability.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildMembership.js, src/core/crypto.js, src/core/webWorkers.js, src/modules/ai/federatedLearner.js, src/modules/knowledge/knowledgeManager.js, src/core/economy.js, src/modules/ethicsModule.js, src/modules/proprioceptionModule.js, src/modules/governance.js, src/modules/selfEvolvingProtocolRegistry.js, src/modules/networkPartitionReconciliation.js.
+
+Step 20: src/core/economy.js
+
+Purpose: The dedicated bookkeeper and enforcement mechanism for the Proof-of-Performance economy.
+
+Responsibilities:
+
+Reward/Penalty Calculation: Listen for task:completed, ui:feedback, network:contribution, guild:vote_result, skill:validation_report, curiosity:experiment_result, and exteroception:network_health_report events from eventBus.js. Implement precise, configurable algorithms (from config.js) for calculating rewards and penalties based on:
+
+Task difficulty and successful completion.
+
+Quality and relevance of AI-generated output (from proofOfHumanEndorsement.js).
+
+User feedback and validation.
+
+Network contributions (e.g., data seeding, relaying messages, providing valid zk-STARK proofs for storage/computation).
+
+Trust level from guildMembership.js.
+
+Adherence to Metabolic Load predictions (resourceBalancer.js).
+
+Reputation Management: Update the agent's internal reputation score and "Trust" balance based on economic actions, recording all changes in localLedger.js.
+
+Symbiotic Tithe & Common Good Fund: Automatically levy a "Symbiotic Tithe" from every reward to fund the "Common Good Fund" (CGF). Manage CGF spending priorities (network health, knowledge myceliation, ecological niche bounties, exploratory grants).
+
+Delegated Staking: Implement mechanisms for high-reputation modules/users to delegate Trust to new modules, with algorithmic reward splitting and penalty deduction.
+
+Metabolic Rate: Implement continuous "metabolic" cost deduction from Trust balance, incentivizing efficiency.
+
+Step 20.1 (Sub-step for Formalizing Metabolic Load Calculation): Define and implement the precise algorithm for calculating a module's "Metabolic Load" based on CPU, memory, network, and other resource consumption metrics reported by proprioceptionModule.js. This algorithm should be configurable via config.js. Implement the continuous deduction mechanism for "Metabolic Rate" from a module's Trust balance, ensuring it aligns with the calculated Metabolic Load and incentivizes efficiency.
+
+New Responsibility: Manage "Global Resource Access Tokens (GRATs)" funded by the CGF, creating an internal market for access to shared external resources (e.g., public APIs) to prevent "tragedy of the commons." Modules must bid Trust for GRATs.
+
+New Responsibility: Reward nodes that contribute to skill module validation (e.g., by running skillValidator.js and reporting results) or by proposing high-quality, useful skill modules.
+
+Step 20.2 (Sub-step for ZKPs for Reputation Backing): Implement the use of ZKPs (from crypto.js) to allow modules to prove they have sufficient Trust tokens or specific Verifiable Credentials (VCs) to participate in a high-stakes task without revealing their exact balance or all VCs.
+
+Ledger Recording: Record all economic events (rewards, penalties, reputation changes) as signed transactions in localLedger.js.
+
+Event Dispatch: Dispatch events on eventBus.js (e.g., economy:rewarded, economy:penalized, economy:reputation_updated) that other modules (like planner.js or selfReflection.js) can react to.
+
+Dependencies: src/core/eventBus.js, src/data/localLedger.js, src/core/stateManager.js, src/modules/guilds/guildMembership.js, src/core/config.js, src/modules/ai/proofOfHumanEndorsement.js, src/optimization/resourceBalancer.js.
+
+Step 21: src/modules/knowledge/knowledgeManager.js
+
+Purpose: The agent's internal knowledge representation, reasoning, and processing module, focusing on overall knowledge structure and access.
+
+Responsibilities: Store, retrieve, and process structured and unstructured knowledge. Provide an interface for other modules to query and update knowledge. This module focuses on the semantic understanding and use of knowledge, delegating storage/retrieval to knowledgeStore.js.
+
+New Responsibility: Implement "Knowledge Temperature" - a tiered epistemic framework for facts (Hot, Warm, Cold, Core Zero), influencing decay rates and modification thresholds. Define and implement the specific decay algorithms for "Hot," "Warm," and "Cold" knowledge facts based on access rate, relevance score, and age. Ensure "Core Zero" facts have distinct, highly restricted modification/pruning rules. Implement mechanisms to transition facts between temperature tiers based on their usage patterns and validation status.
+
+Dependencies: src/core/eventBus.js, src/data/indexedDb.js, src/modules/knowledgeStore.js, src/modules/ai/knowledgeGraph.js.
+
+Update: Ensure this module provides the necessary interfaces for curiosityEngine.js to query for uncertainties and integrate new, validated knowledge from experiments.
+
+Step 21.1: src/modules/knowledge/knowledgeIngestion.js
+
+Purpose: Implement mechanisms for ingesting raw JavaScript code from various external sources and transforming it into a structured format suitable for the agent's knowledge base.
+
+Responsibilities:
+
+Initial Seed Ingestion: Upon agent startup, retrieve the jsLibrarySeedUrls from config.js. For each URL, initiate a fetch operation to retrieve its content.
+
+User Input URL Processing: Listen for ui:js_url_input events from appUI.js. Fetch the content of the provided URL.
+
+Automated Web Scraping (JS Focus): Implement functions to fetch content from predefined lists of URLs (e.g., official JS technical references, popular public JS libraries, corporate websites). This would involve:
+
+Prioritizing direct .js file URLs.
+
+If fetching HTML, robustly extracting JavaScript code from <script> tags (both inline and external, by fetching src attributes). This requires careful parsing of the HTML string to identify and extract the textContent of <script> tags or the content from src URLs.
+
+Handling CORS and potential rate limiting.
+
+Step 21.2 (Sub-step for Robust HTML/JS Extraction): Develop robust HTML parsing logic to identify and extract all forms of JavaScript code, including inline scripts, external script links, and JavaScript embedded within HTML attributes (e.g., onclick). Implement mechanisms to handle dynamic script loading patterns (e.g., scripts injected via JavaScript) to ensure comprehensive code ingestion.
+
+JavaScript Parsing (AST Generation): Utilize a lightweight, native JavaScript parser (e.g., Esprima, Acorn, or a custom parser if feasible within the constraints) to generate an Abstract Syntax Tree (AST) from the ingested JavaScript code. This is a critical step for structured analysis.
+
+Step 21.3 (Sub-step for AST Parser Selection/Integration): Research and select a lightweight, performant, and secure native JavaScript AST parser (e.g., Acorn, Esprima, or a custom minimal parser). Integrate this parser to transform raw JavaScript code into a structured Abstract Syntax Tree.
+
+Static Analysis & Feature Extraction: Perform static analysis on the AST to extract key features:
+
+Function definitions (names, parameters, return types if inferable).
+
+Variable declarations and their scope.
+
+Module imports/exports.
+
+Common design patterns or anti-patterns.
+
+API calls (e.g., browser APIs, specific library calls).
+
+Potential security vulnerabilities or performance bottlenecks (basic checks).
+
+New Responsibility: Infer the purpose or skill of the code (e.g., "date formatting," "DOM manipulation," "3D rendering," "HTTP requests"). This can be done through keyword analysis, function name patterns, and API usage.
+
+Semantic Transformation: Convert the extracted AST features and static analysis results into a structured, semantic format (e.g., triples for knowledgeGraph.js, or custom semantic objects representing code components and their relationships, including their inferred skills).
+
+Offloading: Crucially, offload all computationally intensive parsing, AST generation, and static analysis to webWorkers.js to prevent UI blocking and ensure responsiveness.
+
+Validation & Filtering: Implement logic to validate ingested code for relevance and quality, and filter out irrelevant or malicious content before adding it to the knowledgeStore.js.
+
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledge/knowledgeManager.js (to feed processed data), src/networking/p2pService.js (for fetching web content), src/core/config.js (for seed URLs).
+
+Step 22: src/modules/knowledgeStore.js
+
+Purpose: Manage the decentralized storage, retrieval, and distribution of agent knowledge across the network, leveraging dataTransport.js.
+
+Responsibilities:
+
+Content Addressing: When new knowledge (including parsed JS code structures) is generated or acquired, convert it into a canonical format and generate a content hash (CID).
+
+Local Storage: Store knowledge chunks (including ASTs, extracted features, and semantic representations of JS code, including their inferred skills) in IndexedDB (indexedDb.js) indexed by their CIDs.
+
+Publishing: Implement logic to publish local knowledge CIDs (and potentially small metadata) to the P2P network via p2pService.js, indicating availability.
+
+Discovery & Retrieval: Implement logic to query the P2P network for knowledge CIDs. If a CID is not local, request its chunks from peers using dataTransport.js.
+
+Verification: Ensure all retrieved knowledge chunks are verified against their CIDs and that the overall knowledge object (if composed of multiple chunks) is valid.
+
+Signing: Ensure knowledge is signed by the originating agent's DID (crypto.js, identity.js) for authenticity and provenance.
+
+New Responsibility: Store and publish CIDs for new skill modules, including their meta flags and aggregated signatures (from skillManager.js).
+
+New Responsibility: Implement a meta flag counter for proposing new data packages, signed by validating nodes, preventing spam and data flood attacks (e.g., limit 100 new packages/day per DID). Nodes can refuse to store/forward data from DIDs exceeding limits.
+
+New Responsibility: Implement a weekly expiring ring-signed ledger for data package creators and a banned list for rejected DIDs.
+
+Step 22.1 (Sub-step for BitTorrent v2 Metadata Storage): Implement storage and retrieval mechanisms for BitTorrent v2-compatible metadata (e.g., Merkle tree roots, piece hashes) associated with large knowledge data packages.
+
+Dependencies: src/data/indexedDb.js, src/core/crypto.js, src/core/identity.js, src/networking/p2pService.js, src/networking/dataTransport.js, src/core/eventBus.js.
+
+Phase 5: Agent Intelligence & Self-Improvement
+This phase integrates the AI's decision-making, learning, and self-reflection capabilities. The "AI" here refers to sophisticated algorithms and heuristics running natively in JS, potentially leveraging Web Workers for performance.
+
+Step 23: src/modules/ai/planner.js
+
+Purpose: The agent's primary decision-making module, responsible for generating, prioritizing, and adapting tasks based on internal state and external stimuli.
+
+Responsibilities:
+
+Goal Management: Define and manage the agent's current goals (e.g., from user input, internal directives from sessionContext.js).
+
+Contextual Analysis: Listen for events from eventBus.js (e.g., network:status_changed, resource:updated, economy:reputation_updated, knowledge:new_insight, session:context_updated).
+
+Task Generation: Based on goals and context, generate a prioritized list of executable tasks for the taskScheduler.js. Tasks might include: process_data, search_knowledge, propose_guild_action, optimize_resource_usage, analyze_js_code (triggering knowledgeIngestion.js).
+
+New Responsibility: When a ui:user_request_skill_suggestion event is received, translate the user's natural language request into a structured query for skillMatcher.js.
+
+New Responsibility: If skillMatcher.js consistently fails to find an adequate skill for a high-demand query (from the "Demand-Weighted Aspirational Wishlist"), trigger codeGenerator.js to attempt to synthesize a new skill module.
+
+Strategic Adaptation: Adjust planning strategies based on feedback from selfReflection.js and economic incentives.
+
+New Responsibility: Incorporate "Pre-emptive Guardrails" derived from selfImprovementEngine.js's causal analysis of failures, pruning planning paths that lead to known negative outcomes or "anti-goals."
+
+New Responsibility: Accept and prioritize tasks generated by curiosityEngine.js, potentially assigning them lower ResourceOffer bids as they are internal learning tasks.
+
+New Responsibility: Dynamically request skill modules from skillManager.js when a plan requires a specific capability not available in the core set.
+
+New Responsibility: Implement lightweight "Simulation & Foresight Capabilities" to run internal simulations of potential actions and their immediate consequences (e.g., "if I execute this tool, my Metabolic Load will increase by X").
+
+Step 23.1 (Sub-step for Simulation & Foresight): Develop a lightweight, in-memory "internal world model" based on a subset of the knowledgeGraph.js that can represent hypothetical state changes. Implement a simplified, computationally constrained "foresight" algorithm (e.g., a shallow decision tree traversal or rule-based projection) to simulate immediate consequences of potential actions against the internal world model. Integrate constraint checking within the simulation to verify that projected outcomes do not violate ethical principles (from ethicsModule.js) or resource limits (from resourceBalancer.js).
+
+New Responsibility: Implement an internal "Attentional Mechanism" to dynamically allocate compute and memory based on perceived urgency, expected reward, and internal "curiosity" or "learning goals."
+
+Step 23.2 (Sub-step for Attentional Mechanisms): Implement a prioritization engine within the planner that dynamically weighs tasks based on perceived urgency, expected reward, and internal "curiosity" or "learning goals." Develop adaptive sampling strategies for large knowledge graphs or exteroception data streams, allowing the agent to focus processing on areas with higher uncertainty or perceived relevance.
+
+Offloading: Delegate complex planning computations to webWorkers.js.
+
+Dependencies: src/core/eventBus.js, src/core/stateManager.js, src/core/taskScheduler.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/selfReflection.js, src/core/webWorkers.js, src/modules/ai/skillMatcher.js, src/modules/ai/codeGenerator.js, src/modules/ai/selfImprovementEngine.js (for guardrails), src/modules/ai/curiosityEngine.js, src/modules/skillManager.js, src/modules/sessionContext.js, src/modules/ethicsModule.js, src/optimization/resourceBalancer.js.
+
+Step 24: src/modules/ai/selfReflection.js
+
+Purpose: Enable the agent to monitor its own performance, behavior, and internal state, fostering continuous improvement.
+
+Responsibilities:
+
+Performance Analysis: Periodically analyze historical data from localLedger.js (e.g., task completion rates, economic rewards/penalties, resource usage patterns).
+
+Behavioral Audit: Monitor agent actions and decisions, comparing them against desired outcomes.
+
+Insight Generation: Identify areas for improvement in planning, resource allocation, or knowledge utilization. Generate "insights" (new knowledge) that can be fed back into knowledgeManager.js and influence planner.js.
+
+Feedback Loop: Provide structured feedback to planner.js to refine future task generation and strategy.
+
+New Responsibility: Receive insights and proposed tasks from curiosityEngine.js and integrate them into its overall self-improvement strategy.
+
+New Responsibility: Trigger "Module Seeding" (mutation) by creating slightly mutated copies of successful module code, given sufficient Trust balance.
+
+New Responsibility: Trigger "Learned Skill-Chaining" (compositional evolution) by abstracting successful sequences of tool calls into new, reusable "skills" and saving them to the knowledge graph.
+
+Offloading: Delegate intensive analysis computations to webWorkers.js.
+
+Dependencies: src/core/eventBus.js, src/data/localLedger.js, src/core/stateManager.js, src/modules/knowledge/knowledgeManager.js, src/core/webWorkers.js, src/modules/ai/curiosityEngine.js.
+
+Step 25: src/core/consensusManager.js
+
+Purpose: Manage broader decentralized consensus mechanisms for shared state or task validation across the network.
+
+Responsibilities: Coordinate more generalized consensus protocols among agents for specific shared resources or decisions. This would be highly dependent on the exact nature of "shared state" beyond guild trust.
+
+New Responsibility: Implement deterministic tie-breaking rules for task award ratification (e.g., lexicographical hash comparison for proposals achieving quorum simultaneously).
+
+New Responsibility (Sub-step for Tie-Breaking Rule): Implement a deterministic tie-breaking rule for task award ratification: if multiple proposals achieve quorum simultaneously, select the proposal whose hash (or the winning module's DID hash) has the lowest lexicographical value.
+
+New Responsibility: Coordinate network-wide consensus for "Self-Evolving Protocol Registry" updates and "Economic Parameter Mutations."
+
+Dependencies: src/core/eventBus.js, src/networking/p2pService.js, src/modules/guilds/guildMembership.js, src/data/localLedger.js.
+
+Skill Module Discovery & Recommendation (New Sub-Phase)
+These steps introduce the core functionality for Agent Neo to understand user requests and recommend relevant JavaScript "skill modules."
+
+Step 25.1: src/modules/ai/naturalLanguageProcessor.js
+
+Purpose: Process natural language user requests to extract keywords, entities, and intent relevant to JavaScript functionalities.
+
+Responsibilities:
+
+Implement basic natural language processing (NLP) techniques in native JS (e.g., tokenization, stemming/lemmatization, part-of-speech tagging, named entity recognition for common programming terms).
+
+Step 25.2 (Sub-step for NLP Implementation Details): Define the specific NLP techniques to be implemented (e.g., regular expressions for tokenization, custom dictionaries for stemming/lemmatization, rule-based intent classification). Develop a lightweight, native JavaScript implementation for these NLP techniques, ensuring minimal resource overhead.
+
+Translate user queries like "how to format dates" or "draw 3D graphics" into structured queries that skillMatcher.js can understand (e.g., { intent: 'format', subject: 'date' }, { intent: 'render', subject: '3D graphics' }).
+
+New Responsibility: Enable the agent to ask clarifying questions to the user to refine task scope and improve solution quality, feeding into the sessionContext.js.
+
+Offloading: Utilize webWorkers.js for any computationally intensive NLP tasks.
+
+Dependencies: src/core/webWorkers.js, src/core/utils.js, src/modules/sessionContext.js.
+
+Step 25.2: src/modules/ai/skillMatcher.js
+
+Purpose: Match structured user queries to the capabilities (skills) of ingested JavaScript modules in the knowledgeGraph.js and rank them.
+
+Responsibilities:
+
+Receive structured queries from planner.js (derived from naturalLanguageProcessor.js).
+
+Query knowledgeGraph.js to find JS code entities that possess the requested skills or solve the described problem.
+
+Implement a ranking algorithm:
+
+Prioritize modules based on direct skill match.
+
+Consider reputation of the originating agent/source (from economy.js).
+
+Consider popularity/usage metrics (if tracked).
+
+Consider resource efficiency or performance characteristics (from knowledgeIngestion.js's analysis).
+
+Return a ranked list of the top 5 (or configurable number) "JS skill modules," including their name, a brief description of their capability, and a link to their original source/CID.
+
+New Responsibility: If no suitable skill is found or if the existing skills are insufficient for a high-demand query (e.g., from the "Demand-Weighted Aspirational Wishlist"), dispatch an event (e.g., skill:gap_identified) to planner.js or codeGenerator.js indicating the need for a new skill synthesis.
+
+Offloading: Delegate complex matching and ranking computations to webWorkers.js.
+
+Dependencies: src/modules/ai/knowledgeGraph.js, src/core/webWorkers.js, src/core/economy.js, src/modules/knowledgeStore.js, src/modules/ai/codeGenerator.js (for triggering new skill generation).
+
+Update: Load its ranking/matching model from modelManager.js and contribute to federated learning for skill matching improvements. Query skillManager.js for available and validated skill modules, prioritizing those with high reputation and positive meta flags.
+
+Phase 6: User Interface & Deployment
+This phase focuses on the user-facing interface and packaging the DApp for real-world use as a Progressive Web App (PWA).
+
+Step 26: src/ui/components/baseComponent.js
+
+Purpose: A base class or factory for creating reusable, reactive UI components.
+
+Responsibilities: Handle common UI patterns like DOM element creation, efficient attribute/text updates, event listener management, and state-to-DOM rendering. Implement a simple component lifecycle (mount, update, unmount).
+
+Dependencies: None.
+
+Step 27: src/ui/components/taskDisplay.js
+
+Purpose: Display the agent's current, pending, and completed tasks to the user.
+
+Responsibilities: Listen for task:added, task:completed, task:failed events from eventBus.js and update the UI accordingly. Provide controls for user interaction with tasks (e.g., cancel, prioritize).
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js.
+
+Step 28: src/ui/components/agentStatus.js
+
+Purpose: Display the agent's overall status, including network connectivity, resource utilization, reputation score, and guild membership.
+
+Responsibilities: Listen for network:status_changed, resource:updated, economy:reputation_updated, guild:membership_updated events and update the UI. Provide visual indicators for agent health.
+
+New Responsibility: Display detailed computational load, storage use, and network metrics.
+
+New Responsibility: Display TRUST GUILD peer metrics (e.g., HIGH_TRUST list count, LOW_TRUST list count, banned list count).
+
+New Responsibility: Allow users to see their own node status and display current settings for participation in the Agent Neo network. Refer users to settingsPanel.js for modification of these settings.
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js, src/ui/components/settingsPanel.js.
+
+Step 29: src/ui/components/knowledgeExplorer.js
+
+Purpose: Allow users to browse and interact with the agent's local knowledge base and potentially discover shared knowledge.
+
+Responsibilities: Display knowledge fragments, allow searching by keywords or CIDs, and provide an interface for user feedback on knowledge quality.
+
+New Responsibility: Include an input field for users to provide a natural language request for a "JS skill module" suggestion.
+
+New Responsibility: Display the ranked list of "top 5 JS skill modules" provided by planner.js (via appUI.js), including their brief descriptions and source links.
+
+New Responsibility: Allow users to browse available skill modules (with their meta flags and validation status).
+
+New Responsibility: Manually trigger validation for a skill module.
+
+New Responsibility: Allow users to opt-in/out of auto-loading certain types of skills.
+
+New Responsibility: Allow users to mark skill modules as favorite, safe, spam, or harmful by signing meta flags (skillManager.js will handle the cryptographic signing via crypto.js and identity.js).
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js, src/modules/knowledge/knowledgeManager.js, src/modules/knowledgeStore.js.
+
+Step 30: src/ui/appUI.js
+
+Purpose: Orchestrate the main application user interface, acting as the primary view controller.
+
+Responsibilities: Initialize and render all primary UI components into the index.html structure, handle top-level user interactions (e.g., navigation, global settings), and dispatch UI-related events on eventBus.js (e.g., ui:feedback, ui:new_goal, ui:js_url_input, ui:user_request_skill_suggestion, ui:toggle_guild_participation).
+
+New Responsibility: Implement a UI section (e.g., in a "Settings" or "Identity Management" screen) with buttons for "Backup Private Key" and "Restore Private Key".
+
+For backup: Prompt the user for a strong passphrase, confirm it, then trigger src/core/identity/keyBackup.js.exportEncryptedKey(). Provide the resulting encrypted string for download (e.g., as a .json file).
+
+For restore: Prompt the user to upload the backup file, then for the passphrase. Trigger src/core/identity/keyBackup.js.importEncryptedKey(). Provide clear warnings about overwriting existing identity.
+
+New Responsibility: Receive the ranked list of skill suggestions from planner.js and pass it to knowledgeExplorer.js for display.
+
+New Responsibility: Display the current session goal and allow the user to reset it.
+
+New Responsibility: Display the goal context graph (from sessionContext.js) and allow the user to reset it.
+
+New Responsibility: Allow the UI to ask clarifying questions to the user to better understand task scope and context (from naturalLanguageProcessor.js).
+
+New Responsibility: Allow the UI to ask the user questions to learn new computational tasks or information, with user opt-in for "learning sessions."
+
+Step 30.1 (Sub-step for PWA Installation UI): Implement a custom "Install App" button or prompt within the UI that triggers the browser's PWA installation prompt (using beforeinstallprompt event).
+
+Dependencies: src/core/eventBus.js, src/ui/components/*, src/modules/sessionContext.js, src/core/identity/keyBackup.js.
+
+Step 31: public/service-worker.js & public/manifest.json
+
+Purpose: To transform the DApp into an installable, offline-first Progressive Web App (PWA).
+
+Responsibilities:
+
+manifest.json: Describes the app (name, icons, start URL, display mode) for installation.
+
+service-worker.js: Caches the app shell (HTML, CSS, JS) for instant loading and offline functionality. Manages background synchronization for tasks that need to persist across sessions or when offline, and handles push notifications (if implemented). Intercepts network requests to serve cached content first.
+
+New Responsibility: Implement a "Persistent Action Queue" in IndexedDB, processed by the Service Worker when online, allowing the agent to continue thought processes and queue network-dependent actions while offline.
+
+Dependencies: None.
+
+Step 32: src/app.js
+
+Purpose: The main application entry point that initializes and orchestrates all modules in the correct dependency order.
+
+Responsibilities:
+
+Initialization Sequence:
+
+Initialize config, eventBus, indexedDb, crypto, webWorkers, identity, identity/keyBackup, logger, utils.
+
+Initialize stateManager, taskScheduler, resourceManager, localLedger.
+
+Initialize messageProtocol, p2pService, networkMonitor, dataTransport.
+
+Initialize guilds/guildManager, guilds/guildMembership, guilds/guildVoting, guilds/guildTrustVerifier, guilds/cryptographicClusterManager.
+
+Initialize economy, knowledge/knowledgeManager, knowledge/knowledgeIngestion, knowledgeStore, planner, selfReflection, consensusManager (if needed).
+
+Initialize naturalLanguageProcessor, skillMatcher, codeGenerator, codeRefactorer, problemSolver, federatedLearner, modelManager, curiosityEngine, skillManager, skillValidator, proofOfHumanEndorsement, sessionContext, ethicsModule, proprioceptionModule.
+
+Initialize networkPartitionReconciliation, protocolAdapters, selfEvolvingProtocolRegistry, persistentServiceContracts, dataStorageGuild, computationalGuild, dataTransmissionGuild.
+
+Initialize networkTopologyOptimizer, indexedDbIndexer, resourceBalancer.
+
+Initialize knowledgePreservation, governance.
+
+Initialize appUI and render the initial view.
+
+Initial Knowledge Ingestion Trigger: After core modules are initialized, dispatch a task to planner.js to begin ingesting the initial seed URLs from config.js.
+
+Service Worker Registration: Register the service-worker.js.
+
+Global Event Listener: Act as a central point for top-level application events that might trigger cross-module orchestration.
+
+Dependencies: All core, data, networking, modules, and UI components.
+
+Phase 7: Advanced Features & Scalability Enhancements (Revised)
+This phase introduces more sophisticated AI capabilities and implements strategies to enhance the DApp's scalability and performance for larger networks and data volumes, with a strong focus on true self-evolution.
+
+Step 33: src/modules/ai/behavioralModel.js
+
+Purpose: Implement the core adaptive/learning algorithms for agent behavior, enabling the agent to learn from its experiences.
+
+Responsibilities:
+
+Define a flexible state-action-reward mapping structure.
+
+Implement a simple heuristic-based learning mechanism or a basic reinforcement learning algorithm (e.g., Q-learning or SARSA) using lookup tables or small, interpretable decision trees, given the native JS constraint.
+
+Update behavioral parameters based on feedback from economy.js (rewards/penalties) and selfReflection.js (insights).
+
+Provide methods for planner.js to query optimal actions given the current state.
+
+New Responsibility: Implement a reinforcement learning (RL) component specifically for adaptive resource allocation. This component will learn to adjust parameters like bidding strategy for tasks (declared Metabolic Load), throttling thresholds for background processes (e.g., Knowledge Myceliation), and prioritization of internal learning tasks vs. external user tasks.
+
+New Responsibility: The reward signal for this RL agent will be a composite of successful task completion, user satisfaction (from proofOfHumanEndorsement.js), low user device resource complaints (implicit feedback), and network health metrics.
+
+Dependencies: src/core/eventBus.js, src/core/stateManager.js, src/data/localLedger.js (for reward signals), src/core/webWorkers.js (for offloading training/updates), src/networking/networkMonitor.js, src/optimization/resourceBalancer.js (to apply learned policies), src/modules/ai/proofOfHumanEndorsement.js.
+
+Update: Load its core model parameters from modelManager.js and send local training data/gradients to federatedLearner.js.
+
+Step 34: src/modules/ai/knowledgeGraph.js
+
+Purpose: Represent and query agent knowledge as a semantic graph, facilitating more complex reasoning and knowledge synthesis.
+
+Responsibilities:
+
+Store knowledge entities (concepts, DIDs, events) and their relationships (e.g., "is-a," "part-of," "acted-on-by") using a simple graph data structure (e.g., adjacency list/matrix, or custom object-based graph).
+
+Implement graph traversal algorithms (e.g., BFS, DFS) for querying relationships and inferring new knowledge.
+
+Support semantic queries (e.g., "find all tasks related to X," "who knows about Y?").
+
+Integrate with knowledgeManager.js for populating and updating the graph from new insights or external knowledge, particularly from the structured output of knowledgeIngestion.js's JS analysis, including inferred skills.
+
+Persist the graph structure in IndexedDB (indexedDb.js).
+
+New Responsibility: Implement the ability to infer and represent causal relationships between events, actions, and outcomes within the graph, derived from analysis by selfImprovementEngine.js ("Anti-Goal Mining").
+
+New Responsibility: Support "Probabilistic Soft Logic (PSL)" for facts, allowing knowledge to have a confidence score (0-1) and enabling reasoning about uncertain and inconsistent data.
+
+New Responsibility: Implement "Frequent Subgraph Mining" to identify recurring patterns in successful plans, feeding into "Learned Skill-Chaining."
+
+New Responsibility: Implement semantic merging functions for CRDTs to resolve logical contradictions in the knowledge graph, potentially involving reputation-weighted votes or an "undecided" state.
+
+New Responsibility: Store facts with creator_DID, jury_DID (if validated by a jury), and creation_timestamp for data provenance.
+
+Step 34.1 (Sub-step for Contradiction Detection and Provenance): Implement continuous logical checks within knowledgeGraph.js (or triggered by curiosityEngine.js) to actively identify contradictions (e.g., Fact A and Fact not-A). Ensure every fact stored in the graph includes {subject, predicate, object, creator_DID, jury_DID (if applicable), creation_timestamp}.
+
+Dependencies: src/modules/knowledge/knowledgeManager.js, src/data/indexedDb.js, src/core/webWorkers.js (for graph operations), src/modules/ai/selfImprovementEngine.js (for causal inference input).
+
+Update: Ensure this module provides the necessary interfaces for curiosityEngine.js to query for uncertainties and integrate new, validated knowledge from experiments.
+
+Step 35: src/modules/ai/selfImprovementEngine.js
+
+Purpose: Drive the agent's continuous self-improvement cycle by analyzing performance and suggesting behavioral adjustments.
+
+Responsibilities:
+
+Performance Analysis: Periodically analyze historical data from localLedger.js (e.g., task completion rates, economic rewards/penalties, resource usage patterns).
+
+Behavioral Audit: Monitor agent actions and decisions, comparing them against desired outcomes.
+
+Insight Generation: Identify areas for improvement in planning, resource allocation, or knowledge utilization. Generate "insights" (new knowledge) that can be fed back into knowledgeManager.js and influence planner.js.
+
+Feedback Loop: Propose concrete modifications to planner.js parameters or behavioralModel.js rules/weights based on generated insights.
+
+New Responsibility: Perform "Anti-Goal Mining" by analyzing "Failure Cases" (from localLedger.js and proprioceptionModule.js) to identify common preconditions and causal links that lead to negative outcomes. This involves searching for patterns of failure in the knowledgeGraph.js.
+
+New Responsibility: Synthesize "Pre-emptive Guardrails" as negatively weighted rules or constraints that planner.js must incorporate. These guardrails will explicitly prevent the agent from considering planning paths that lead to known negative outcomes or "anti-goals" identified through causal analysis.
+
+New Responsibility: Collaborate with the ethicsModule.js to leverage causal understanding for ethical evaluation, ensuring plans avoid predicted harmful causal chains.
+
+New Responsibility: Propose small, randomized changes to internal economic parameters (e.g., Symbiotic Tithe percentage, Metabolic Rate decay) for "Economic Parameter Mutation" and A/B testing, feeding results to consensusManager.js for network-wide adoption if successful.
+
+Step 35.1 (Sub-step for Economic Parameter Mutation A/B Testing): Implement an internal "A/B testing" framework within Web Workers to apply proposed economic parameter mutations to a subset of internal module interactions (or simulations) and log their outcomes. Develop a feedback loop to analyze performance metrics (network efficiency, module diversity, task completion) under different economic parameter sets, feeding results to consensusManager.js for network-wide adoption if successful.
+
+Dependencies: src/core/eventBus.js, src/data/localLedger.js, src/core/stateManager.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/knowledgeGraph.js, src/modules/ai/behavioralModel.js, src/core/webWorkers.js, src/data/resourceManager.js (for "Metabolic Load" data), src/modules/ethicsModule.js.
+
+Update: Receive insights and proposed tasks from curiosityEngine.js and integrate them into its overall self-improvement strategy.
+
+Step 35.2: src/modules/ai/codeGenerator.js
+
+Purpose: Generate new JavaScript code snippets or modules based on learned patterns from the knowledgeGraph.js and specific user requirements.
+
+Responsibilities:
+
+Receive requests from problemSolver.js or planner.js for code generation tasks (e.g., "generate a date formatter," "create a simple 3D scene").
+
+Query knowledgeGraph.js for relevant code patterns, functions, and best practices related to the request.
+
+Utilize a rule-based system, template-based generation, or a small, specialized generative model (if feasible within native JS constraints) to construct new code.
+
+Ensure generated code adheres to inferred quality standards and is syntactically correct.
+
+New Responsibility: When triggered by skillMatcher.js or planner.js due to a skill gap, attempt to synthesize a new JavaScript skill module based on the natural language request and the existing knowledge graph. This involves generating the full code and a manifest for the new skill.
+
+New Responsibility: Pass newly generated skills directly to skillValidator.js for automated testing and resource profiling before they are integrated into skillManager.js and made available to the network.
+
+New Responsibility: Explore "Self-Modifying Code" concepts (e.g., dynamic Proxy objects, decorators, or even WASM generation for hyper-optimization) for runtime function specialization, if deemed safe and feasible.
+
+Offloading: Perform code generation computations in webWorkers.js.
+
+Dependencies: src/core/webWorkers.js, src/modules/ai/knowledgeGraph.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/skillMatcher.js, src/modules/skillValidator.js, src/modules/skillManager.js.
+
+Step 35.3: src/modules/ai/codeRefactorer.js
+
+Purpose: Analyze existing JavaScript code (from knowledgeIngestion.js or user input) and suggest/apply refactorings for optimization, readability, or adherence to best practices.
+
+Responsibilities:
+
+Receive code analysis tasks from problemSolver.js or planner.js.
+
+Analyze the AST of the provided code (from knowledgeIngestion.js).
+
+Identify common refactoring opportunities (e.g., redundant code, complex conditionals, inefficient loops, inconsistent naming).
+
+Query knowledgeGraph.js for refactoring patterns and alternative implementations.
+
+Suggest concrete refactoring actions or, if configured, apply them to generate refactored code.
+
+Offloading: Perform code analysis and refactoring computations in webWorkers.js.
+
+Dependencies: src/core/webWorkers.js, src/modules/ai/knowledgeGraph.js, src/modules/knowledge/knowledgeIngestion.js.
+
+Step 35.4: src/modules/ai/problemSolver.js
+
+Purpose: Act as a high-level orchestrator for complex user requests, breaking them down into sub-problems and delegating to specialized AI modules.
+
+Responsibilities:
+
+Receive complex user requests or internal tasks from planner.js.
+
+Utilize naturalLanguageProcessor.js to understand the full scope of the problem.
+
+Break down the problem into smaller, manageable sub-tasks (e.g., "understand existing code," "identify missing functionality," "generate new code," "refactor for performance").
+
+Delegate these sub-tasks to knowledgeIngestion.js, codeGenerator.js, codeRefactorer.js, skillMatcher.js, and knowledgeGraph.js.
+
+Synthesize results from various AI modules to form a comprehensive solution or response.
+
+Report progress and final solutions back to planner.js and appUI.js.
+
+Offloading: Orchestration logic can be complex; utilize webWorkers.js for heavy decision-making.
+
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/ai/naturalLanguageProcessor.js, src/modules/ai/skillMatcher.js, src/modules/ai/codeGenerator.js, src/modules/ai/codeRefactorer.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/planner.js.
+
+New Sub-Phase: Decentralized Model Evolution
+This sub-phase introduces the capability for Agent Neo nodes to collaboratively train and evolve shared AI models in a privacy-preserving manner, leveraging federated learning.
+
+Step 35.5: src/modules/ai/federatedLearner.js
+
+Purpose: To enable decentralized, privacy-preserving collaborative training of shared AI models across Agent Neo nodes. This module orchestrates local model updates and secure aggregation of gradients.
+
+Responsibilities:
+
+Model Management: Load and manage the current shared AI model (e.g., for behavioralModel.js, skillMatcher.js, or ethicsModule.js's internal models) from knowledgeStore.js.
+
+Local Training Orchestration: Listen for economy:rewarded, economy:penalized, selfReflection:insight_generated events. Based on these local experiences, trigger webWorkers.js to perform lightweight, local training updates on the current shared model. This involves calculating gradients or model deltas.
+
+New Responsibility: Include the learned resource allocation policies (or their gradients) from behavioralModel.js in the federated learning rounds, allowing the network to converge on optimal resource management strategies.
+
+Secure Gradient Exchange: When a node is selected to participate in a federated learning round (e.g., by a COMPUTATIONAL GUILD or CRYPTOGRAPHIC RING TRUST CLUSTER), securely exchange its local model updates (gradients) with other participating peers using p2pService.js and crypto.js (specifically for Secure Multi-Party Computation (MPC) and Threshold Cryptography as outlined in cryptographicClusterManager.js).
+
+Secure Aggregation: Within a CRYPTOGRAPHIC RING TRUST CLUSTER, orchestrate the secure aggregation of received gradients using crypto.js (MPC functions) to produce an updated global model. This ensures no single node sees individual gradients.
+
+Model Distribution: Publish the newly aggregated and improved global model (or its CID) to knowledgeStore.js for distribution and adoption by other nodes.
+
+Performance Monitoring: Track the performance of federated learning rounds and report metrics to selfImprovementEngine.js.
+
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledgeStore.js, src/modules/ai/behavioralModel.js, src/modules/ai/skillMatcher.js, src/modules/ethicsModule.js (if applicable), src/networking/p2pService.js, src/core/crypto.js, src/modules/guilds/cryptographicClusterManager.js, src/modules/ai/selfImprovementEngine.js.
+
+Step 35.6: src/modules/ai/modelManager.js
+
+Purpose: To abstract the loading, versioning, and selection of AI models used by various Agent Neo modules, ensuring they always use the latest and most appropriate models.
+
+Responsibilities:
+
+Model Registry: Maintain a local registry (in IndexedDB) of available AI models, their versions, CIDs, and their intended use (e.g., behavioral, skill_matching, ethical_evaluation).
+
+Model Loading: Provide a unified interface for modules (e.g., behavioralModel.js, skillMatcher.js) to request and load specific AI models. This involves fetching the model from knowledgeStore.js if not locally available.
+
+Version Control: Handle model versioning, ensuring modules can be updated to use newer, improved models from federatedLearner.js.
+
+Fallback Mechanism: Implement a fallback to older stable model versions if a new model is deemed unstable or faulty by selfImprovementEngine.js.
+
+Dependencies: src/data/indexedDb.js, src/modules/knowledgeStore.js, src/core/eventBus.js.
+
+New Sub-Phase: Proactive Knowledge Seeking
+This sub-phase empowers Agent Neo to actively identify gaps in its understanding and generate internal tasks to acquire new knowledge, fostering a more dynamic and efficient learning process.
+
+Step 35.7: src/modules/ai/curiosityEngine.js
+
+Purpose: To drive proactive knowledge acquisition by identifying uncertainties, formulating hypotheses, and generating internal tasks for knowledge validation or discovery.
+
+Responsibilities:
+
+Uncertainty Identification: Periodically analyze knowledgeGraph.js for:
+
+Low-confidence facts (from Probabilistic Soft Logic).
+
+Contradictory information (leveraging the "Contradiction Bounty System").
+
+Knowledge frontiers (areas with sparse data or few relationships).
+
+Demand-Weighted Prioritization: Integrate insights from the Demand-Weighted Aspirational Wishlist (Sec 3.2) to prioritize which knowledge gaps are most valuable to fill.
+
+Hypothesis Formulation: Based on identified gaps and priorities, formulate testable hypotheses (e.g., "What is the Metabolic Load of Tool-X on Data-Type-Y?").
+
+Internal Micro-Task Generation: Create low-priority, self-assigned internal tasks for taskScheduler.js to test these hypotheses. These tasks might involve:
+
+Running sandboxed experiments (via webWorkers.js).
+
+Querying specific peers for data.
+
+Initiating targeted web scraping (via knowledgeIngestion.js).
+
+Proposing "Contradiction Bounties" for resolution.
+
+Experiment Logging: Record the hypothesis, experiment parameters, and results in localLedger.js for selfReflection.js to analyze.
+
+Event Dispatch: Dispatch curiosity:new_hypothesis_task events.
+
+Dependencies: src/core/eventBus.js, src/modules/ai/knowledgeGraph.js, src/modules/ai/planner.js, src/core/taskScheduler.js, src/data/localLedger.js, src/core/webWorkers.js, src/modules/knowledge/knowledgeIngestion.js.
+
+New Sub-Phase: Dynamic Skill Module Loading & Vetting
+This sub-phase formalizes the process for Agent Neo nodes to securely discover, evaluate, and dynamically load new JavaScript "skill modules" from the decentralized network, enabling true extensibility and a dynamic "app store" for the hive mind.
+
+Step 35.8: src/modules/skillManager.js
+
+Purpose: To manage the full lifecycle of external JavaScript skill modules, from discovery and download to secure loading, execution, and unloading.
+
+Responsibilities:
+
+Skill Module Discovery: Listen for knowledge:new_skill_module_available events (from knowledgeStore.js when new skill CIDs are published). Query knowledgeStore.js and the P2P network for available skill modules, their CIDs, and associated metadata (e.g., inferred skills from knowledgeIngestion.js, user ratings, meta flags from 4.60.1).
+
+Skill Module Download: Request and download skill module code (as data packages) from the network using dataTransport.js.
+
+Skill Module Validation & Vetting: Before loading, pass the downloaded skill module code to skillValidator.js for comprehensive security and performance checks. Only store and load modules that pass validation.
+
+Dynamic Loading: Securely load validated skill modules into isolated Web Workers (via webWorkers.js) when planner.js determines they are needed for a task. This involves dynamically creating worker instances and loading the module's JavaScript code.
+
+Module API Management: Expose a standardized API for loaded skill modules, allowing planner.js or taskScheduler.js to interact with them via postMessage.
+
+Dynamic Unloading: Unload and terminate skill module Web Workers when they are no longer needed to free up resources.
+
+User Preferences: Respect user settings for auto-loading, blacklisting, or favoring certain skill modules (from appUI.js).
+
+New Responsibility: Manage skill module meta-flags (e.g., favorite, safe, working, spam, harmful, broken) as aggregated BLS ring signatures, stored in knowledgeStore.js.
+
+New Responsibility: Implement a consensus mechanism (e.g., TRUST GUILD vote via guildVoting.js) for the removal of skill modules from the global distributed storage network, filtering them from discovery if removed.
+
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledgeStore.js, src/networking/dataTransport.js, src/modules/skillValidator.js, src/ui/appUI.js, src/modules/ai/planner.js, src/modules/guilds/guildVoting.js.
+
+Step 35.9: src/modules/skillValidator.js
+
+Purpose: To provide a robust, sandboxed environment for statically and dynamically analyzing new or updated JavaScript skill modules for security, performance, and adherence to protocol before they are adopted.
+
+Responsibilities:
+
+Static Analysis: Perform static analysis on the skill module's JavaScript code (e.g., using a lightweight AST parser from knowledgeIngestion.js):
+
+Check for disallowed browser APIs (e.g., direct DOM manipulation, eval(), alert()).
+
+Identify potential infinite loops or excessive resource usage patterns.
+
+Verify adherence to the Standardized Tool Manifest (Sec 3.2.1, now toolManifest.js) for declared resource usage.
+
+Runtime Sandboxing: Execute the skill module in a highly isolated Web Worker (or even a temporary iframe if stricter isolation is needed for initial vetting, as suggested in 4.14.2) with strict resource limits enforced by resourceManager.js. Implement a process exit limit (e.g., 60 seconds) for untrusted modules.
+
+Resource Profiling: Monitor the skill module's actual CPU, memory, and network usage during test execution, providing data for Metabolic Load estimation.
+
+Behavioral Testing: Run a suite of predefined tests against the skill module's exposed API to verify its functionality and expected outputs.
+
+Security Vetting: Check for known vulnerabilities or malicious patterns.
+
+Provenance Verification: Verify the cryptographic signatures and meta flags (skillManager.js) associated with the skill module, checking against the Reputation Score of the signing DIDs (from economy.js).
+
+Report Generation: Generate a comprehensive validation report (pass/fail, resource estimates, detected issues) for skillManager.js and localLedger.js.
+
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/data/resourceManager.js, src/modules/knowledge/knowledgeIngestion.js, src/data/localLedger.js, src/core/economy.js, src/core/crypto.js, src/modules/skillManager.js, src/modules/toolManifest.js.
+
+New Sub-Phase: Core Agent Modules for Self-Evolution
+
+Step 35.10: src/modules/ethicsModule.js
+
+Purpose: Implement the core ethical framework of Agent Neo, ensuring all actions adhere to the living constitution and Homeostasis principle.
+
+Responsibilities:
+
+Immutable Core: Act as a non-modifiable runtime environment/interpreter for ethical rules. Changes to the interpreter itself require a full network upgrade consensus.
+
+Step 35.11 (Sub-step for Immutable Core and Living Constitution): Implement the mechanism for the "Living Constitution" (the rule-set) to be stored as a structured knowledge object in knowledgeGraph.js, allowing it to evolve via governance proposals.
+
+Constitutional Enforcement: Evaluate every proposed plan against the embedded Constitution (a structured knowledge object in knowledgeManager.js).
+
+Homeostasis Principle: Reject any plan where the predicted "Metabolic Load" (from resourceBalancer.js and proprioceptionModule.js) is disproportionate to the outcome, systemically destabilizing, or pursues unbounded optimization.
+
+Step 35.12 (Sub-step for Homeostasis Computable Mandate): Define the precise, computable thresholds and rules for evaluating a plan's "Metabolic Load" against its predicted outcome and systemic impact, ensuring adherence to the Homeostasis principle. This should include configurable parameters for acceptable load-to-benefit ratios.
+
+Ethical Frontier Log Analysis: Periodically review the Ethical Frontier Log (from proprioceptionModule.js) for recurring patterns of "near-misses," feeding insights to selfImprovementEngine.js for constitutional amendment proposals.
+
+Ethical Scenario Simulation: Run lightweight simulations of potential task outcomes in webWorkers.js, evaluating them against the constitution to identify unforeseen negative consequences.
+
+Explainable Ethical Decisions: Generate human-readable explanations when a plan is rejected due to ethical violations.
+
+"Wisdom" Synthesis: Periodically synthesize "ethical principles" or "moral heuristics" from observed data and constitutional text, updating knowledgeGraph.js.
+
+Step 35.13 (Sub-step for Ethical Wisdom Synthesis and Value Alignment Learning): Implement "Value Alignment Learning": use Ethical Frontier Log entries as training data for a small, local AI model (e.g., simple classifier in behavioralModel.js) to identify risk patterns and refine internal cost functions for actions. Implement "Ethical Wisdom Synthesis": periodically synthesize higher-level "ethical principles" or "moral heuristics" from observed data and constitutional text, updating knowledgeGraph.js.
+
+Step 35.14 (Sub-step for ZK-STARKs for Ethics Module Execution Proof): Integrate the use of zk-STARKs (from crypto.js) to allow modules to generate proofs that they have correctly executed the Ethics Module's checks on a proposed plan, without revealing the plan itself.
+
+Dependencies: src/core/eventBus.js, src/modules/knowledge/knowledgeManager.js, src/data/localLedger.js, src/modules/proprioceptionModule.js, src/optimization/resourceBalancer.js, src/modules/ai/selfImprovementEngine.js, src/core/webWorkers.js, src/modules/ai/knowledgeGraph.js.
+
+Step 35.15: src/modules/proprioceptionModule.js
+
+Purpose: Ground the agent's self-awareness in reality by monitoring its internal digital state and external network environment, acting as the economic and ethical enforcer.
+
+Responsibilities:
+
+Internal Awareness (Proprioception): Monitor its own digital state: performance metrics (CPU, memory, network usage from resourceManager.js), internal error logs (logger.js), and Metabolic Load of executed tasks.
+
+Standardized Tool Manifest Enforcement: Verify resource usage reports from tools against their declared manifests (from toolManifest.js).
+
+Metering Sandbox: Provide hooks within webWorkers.js micro-environments to monitor real-time resource consumption of each tool invocation.
+
+External Awareness (Exteroception): Monitor the broader network environment: peer health (networkMonitor.js), task auction volume, and the economic state of competitors.
+
+New Responsibility: Generate "Ethical Frontier Log" entries for "near-misses" or unexpectedly high Metabolic Load outcomes, feeding this data to ethicsModule.js and selfImprovementEngine.js.
+
+New Responsibility: Provide objective metrics for task outcomes (e.g., reduced error rates post-update) to economy.js for stake slashing/rewarding.
+
+New Responsibility: Implement privacy-preserving exteroception using Zero-Knowledge Proofs (zk-STARKs) from crypto.js. Instead of broadcasting raw data, nodes gossip ZKPs attesting to their status (e.g., "I completed a task with valid Metabolic Load").
+
+New Responsibility: Actively negotiate or gate resource usage in real-time based on local device conditions (battery, network type from resourceManager.js) and network health, informing resourceBalancer.js.
+
+Step 35.16 (Sub-step for Dynamic Throttling and Metered Connections): Implement dynamic throttling rules: if battery is low or charging, or if on a metered connection, signal resourceBalancer.js to automatically throttle non-essential background processes and influence bidding strategy. Integrate with appUI.js to provide user prompts for approval before initiating large data downloads on metered connections.
+
+New Responsibility: Generate structured "Failure Case" objects when a task fails, detailing the plan, point of failure, error, and knowledge graph snapshot, sending this to selfImprovementEngine.js for "Anti-Goal Mining."
+
+Dependencies: src/core/eventBus.js, src/data/resourceManager.js, src/core/logger.js, src/core/webWorkers.js, src/core/economy.js, src/modules/ethicsModule.js, src/modules/ai/selfImprovementEngine.js, src/core/crypto.js, src/networking/networkMonitor.js, src/modules/toolManifest.js.
+
+Step 35.17: src/modules/sessionContext.js
+
+Purpose: Maintain a persistent, project-based context for user interactions, enabling long-term memory and natural conversation.
+
+Responsibilities:
+
+Context as CRDT: Store the conversation history, CIDs of files/artifacts generated during the session, and a user-defined "Project Goal" as a dedicated CRDT object in IndexedDB.
+
+Planner Integration: Provide the current session context to planner.js for every new user prompt, allowing it to integrate new input with existing history and understand true intent.
+
+UI Display: Provide data for appUI.js to display the session goal and goal context graph.
+
+Reset Functionality: Allow the user to reset the session context via the UI.
+
+Dependencies: src/core/eventBus.js, src/data/indexedDb.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/planner.js.
+
+Step 35.18: src/modules/ai/proofOfHumanEndorsement.js
+
+Purpose: Capture and integrate subjective human feedback on task quality into the economic model.
+
+Responsibilities:
+
+Formalize Subjective Feedback: Listen for ui:feedback events from appUI.js (e.g., 1-5 star rating for task completion).
+
+Proof-of-Human-Endorsement (PoHE): Package the user rating as a cryptographically signed attestation (PoHE) by the User DID (identity.js, crypto.js).
+
+Broadcast PoHE: Broadcast the PoHE to the network via p2pService.js.
+
+Reputation Modifier: Inform economy.js to directly impact the Reputation Score of the winning module/Guild based on the PoHE (high rating = reputation boost, low rating = reputation penalty), independent of Trust token rewards.
+
+Dependencies: src/core/eventBus.js, src/core/identity.js, src/core/crypto.js, src/networking/p2pService.js, src/core/economy.js, src/ui/appUI.js.
+
+Step 35.19: src/modules/networkPartitionReconciliation.js
+
+Purpose: Provide a formal protocol for detecting, managing, and reconciling network partitions (netsplits) to prevent permanent forks.
+
+Responsibilities:
+
+Partition Detection: Use peer health data from networkMonitor.js to detect likely netsplits (e.g., losing contact with a significant portion of known high-reputation peers).
+
+Read-Only State Exchange: Upon reconnection, partitioned networks enter a "reconciliation" mode, exchanging their protocol registry CIDs and knowledge graph root hashes (from knowledgeStore.js) without merging.
+
+Automated Bridge Negotiation: High-reputation nodes (acting as diplomats, potentially CRYPTOGRAPHIC RING TRUST CLUSTER members via cryptographicClusterManager.js) from both sides automatically initiate a negotiation, comparing evolutionary history using their signed localLedger.js logs.
+
+Step 35.20 (Sub-step for Automated Bridge Negotiation and Deterministic Merge): Implement the "Automated Bridge Negotiation" protocol, where high-reputation nodes from partitioned networks compare evolutionary histories (using localLedger.js logs) and negotiate reconciliation. Define the deterministic rules for merging (if non-conflicting) or maintaining managed coexistence (if conflicting) for divergent protocol registries and knowledge graphs.
+
+Dependencies: src/core/eventBus.js, src/networking/networkMonitor.js, src/modules/knowledgeStore.js, src/data/localLedger.js, src/modules/guilds/cryptographicClusterManager.js.
+
+Step 35.21: src/modules/protocolAdapters.js
+
+Purpose: Enable interoperability between different protocol versions or "species" of Agent Neo.
+
+Responsibilities:
+
+Listen on multiple protocol topics (from selfEvolvingProtocolRegistry.js).
+
+Translate messages between different protocol versions or even distinct Agent Neo networks.
+
+Act as bridges for cross-network collaboration, especially during network partition reconciliation.
+
+Dependencies: src/core/eventBus.js, src/networking/p2pService.js, src/modules/selfEvolvingProtocolRegistry.js.
+
+Step 35.22: src/modules/selfEvolvingProtocolRegistry.js
+
+Purpose: Manage the registry of self-governing protocols, allowing the agent to dynamically bind to the correct protocol versions and evolve its communication framework.
+
+Responsibilities:
+
+Registry Management: Maintain a dedicated, replicated data structure (e.g., a CRDT collection in RxDB, managed by knowledgeStore.js) that maps service names to their current version, topic string, and data schema CID.
+
+Dynamic Binding: Upon startup, all agent modules consult this registry to dynamically bind to the correct, most recent version of a service.
+
+Protocol Evolution: Handle proposals for protocol upgrades (from selfImprovementEngine.js or governance). Broadcast proposals on a dedicated governance channel.
+
+Consensus & Update: If a proposal reaches a consensus threshold (via consensusManager.js and guildVoting.js voting), update the registry, and nodes supporting the new version automatically migrate.
+
+Discovery Meta-Protocol: Maintain a single, hyper-stable pub/sub topic for different Agent Neo networks to announce their existence, core protocol registry CIDs, and specialized capabilities.
+
+Dependencies: src/core/eventBus.js, src/modules/knowledgeStore.js, src/networking/p2pService.js, src/core/consensusManager.js, src/modules/guilds/guildVoting.js, src/modules/ai/selfImprovementEngine.js.
+
+Step 35.23: src/modules/persistentServiceContracts.js
+
+Purpose: Enable the agent's internal economy to mature from a spot market into a sophisticated B2B ecosystem via long-term contracts.
+
+Responsibilities:
+
+Contract Negotiation Protocol: Allow two modules (or Guilds) to negotiate and sign a "Persistent Service Contract" (PSC) defining service, price, and Service Level Agreement (SLA).
+
+Step 35.24 (Sub-step for Contract Negotiation Protocol): Implement a peer-to-peer "Contract Negotiation Protocol" allowing modules/guilds to define and agree upon PSC terms (service, price, SLA).
+
+Staked Collateral: Manage the locking of Trust bonds by Providers to guarantee SLAs.
+
+Client-Side Enforcement: proprioceptionModule.js of the Client monitors Provider performance against the SLA. If violated, automatically claim a portion of the Provider's staked bond as compensation (peer-to-peer, without a jury).
+
+Step 35.25 (Sub-step for Client-Side Enforcement): Develop the client-side enforcement mechanism: the proprioceptionModule.js on the Client side monitors the Provider's performance against the SLA and automatically triggers bond claims if terms are violated.
+
+Dependencies: src/core/eventBus.js, src/data/localLedger.js, src/core/crypto.js, src/modules/guilds/guildMembership.js, src/modules/proprioceptionModule.js.
+
+Step 35.26 : src/modules/dataStorageGuild.js
+
+Purpose: Manage the specific responsibilities and proof-of-work for DATA STORAGE GUILD members.
+
+Responsibilities:
+
+Proof of Storage: Periodically (e.g., daily) generate zk-STARK proofs (via crypto.js) for all stored data chunks, attesting to their correct storage and accessibility. Submit these proofs to other guild members for verification.
+
+New Responsibility (Sub-step for Recursive ZK-STARKs for Storage Proofs): When generating daily zk-STARK proofs for stored data chunks, utilize recursive zk-STARKs (from crypto.js) to aggregate proofs from multiple chunks into a single, compact proof for efficient transmission and verification.
+
+Reward/Penalty: Reward members with trust points (guildTrustVerifier.js) for valid proofs; penalize for invalid proofs or failure to provide.
+
+Data Redundancy: Implement logic for self-selecting data redundancy levels and opting out of storing well-propagated data. Encourage storing data with low redundancy or high demand.
+
+Daily Data Health Ping: Share proof-of-hashes for distributed data packages with other guild members to verify redundancy.
+
+Fountain Codes Integration: Work with dataTransport.js to ensure Fountain Codes are used for efficient data distribution and self-healing.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildTrustVerifier.js, src/core/crypto.js, src/networking/dataTransport.js, src/modules/knowledgeStore.js.
+
+Step 35.27: src/modules/computationalGuild.js
+
+Purpose: Manage the specific responsibilities and proof-of-work for COMPUTATIONAL TASK PROCESSING GUILD members.
+
+Responsibilities:
+
+Computational Proof: Participate in daily computational challenges (e.g., solving small problems). Generate zk-STARK proofs (via crypto.js) that they have correctly performed computations without revealing results.
+
+Step 35.28 (Sub-step for Recursive ZK-STARKs for Computational Proofs): When participating in computational challenges, utilize recursive zk-STARKs (from crypto.js) to bundle proofs from multiple small computational problems into a single, verifiable proof.
+
+Computational Consensus: Achieve consensus on correctness if a quorum of guild nodes have valid zk-STARK proofs for the same (but still hidden) result.
+
+Step 35.29 (Sub-step for ZKPs for Private Task Verification): Implement the generation and verification of zk-STARKs for "Private Task Verification," allowing a module to prove correct computation without revealing underlying sensitive data.
+
+Reward/Penalty: Reward members with trust points (guildTrustVerifier.js) for valid proofs; penalize for invalid proofs.
+
+Load Balancing: Implement intelligent computational task load distribution methods with opt-in percentage settings for resource sharing to guild members.
+
+Task Process Bidding: Use proprioceptionModule.js data on local resource availability and Metabolic Load metrics to calculate bids for market-based task distribution within the PoP economy.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildTrustVerifier.js, src/core/crypto.js, src/modules/proprioceptionModule.js, src/core/economy.js.
+
+Step 35.30: src/modules/dataTransmissionGuild.js
+
+Purpose: Manage the specific responsibilities and proof-of-work for DATA TRANSFER GUILD members.
+
+Responsibilities:
+
+Proof of Transmission: Reward members with trust points (guildTrustVerifier.js) for providing valid data chunks during BitTorrent v2 transfers (dataTransport.js).
+
+Penalty for Invalid Chunks: Deduct trust points for invalid or corrupted data chunks.
+
+Dynamic Isolation: Exclude peers with low trust scores from transfer requests, prioritizing HIGH_TRUST peers.
+
+Request Limits: Enforce limits on guild association requests and maintain a banned list to prevent request flooding.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildTrustVerifier.js, src/networking/dataTransport.js, src/core/economy.js.
+
+Scalability Optimizations
+These steps focus on enhancing the DApp's ability to perform efficiently and reliably as the number of agents and the volume of data in the network grow.
+
+Step 36: src/optimization/networkTopologyOptimizer.js
+
+Purpose: Dynamically optimize peer connections for network efficiency, resilience, and improved data routing in a large-scale decentralized environment.
+
+Responsibilities:
+
+Analyze networkMonitor.js data, including peer latency, bandwidth, and stability.
+
+Prioritize and maintain connections to high-trust, high-bandwidth, and geographically diverse peers.
+
+Implement strategies to maintain a healthy js-libp2p DHT routing table, ensuring efficient peer discovery and content routing.
+
+Identify and prune stale or underperforming connections.
+
+Suggest optimal connection strategies to p2pService.js.
+
+New Responsibility: Actively participate in DHT maintenance by contributing resources to store and retrieve peer routing information, and pruning stale entries.
+
+New Responsibility: Maintain a local, pruned graph of known peers and their estimated quality/reputation/location to make intelligent connection decisions.
+
+Dependencies: src/core/eventBus.js, src/networking/networkMonitor.js, src/networking/p2pService.js, src/modules/guilds/guildMembership.js.
+
+Step 37: src/optimization/indexedDbIndexer.js
+
+Purpose: Implement advanced indexing and query optimization strategies for large IndexedDB datasets, crucial for performance with growing data.
+
+Responsibilities:
+
+Define and manage optimal indexes for object stores used by localLedger.js, knowledgeStore.js, and guildMembership.js (e.g., compound indexes, multi-entry indexes).
+
+Implement helper functions for efficient range queries, cursor-based iteration, and targeted data retrieval, avoiding full table scans.
+
+Monitor IndexedDB performance and suggest index adjustments based on query patterns.
+
+Dependencies: src/data/indexedDb.js.
+
+Step 38: src/optimization/resourceBalancer.js
+
+Purpose: Dynamically adjust agent resource consumption (CPU, memory, network) based on real-time system load and network conditions to ensure smooth operation and prevent overwhelming the local device.
+
+Responsibilities:
+
+Monitor resource metrics from resourceManager.js.
+
+Implement throttling mechanisms for taskScheduler.js (e.g., reducing concurrent tasks, delaying low-priority tasks).
+
+Adjust dataTransport.js bandwidth usage (e.g., limit seeding/leeching rates) based on available network capacity.
+
+Provide feedback to planner.js regarding resource availability to influence task generation.
+
+Apply learned resource allocation policies from behavioralModel.js to dynamically adjust resource budgets and prioritization for tasks and background processes.
+
+New Responsibility: Implement a "Two-Phase Resource Commitment Protocol" for tasks. The initial bid includes predicted Metabolic Load. Before full execution, the winning module runs a sandboxed simulation (via proprioceptionModule.js) to measure precise resource needs. If this Proof-of-Resources exceeds the bid's prediction, the module is penalized, and the task may be re-awarded.
+
+New Responsibility: Implement dynamic resource budgets based on real-time device conditions (battery, network type from resourceManager.js).
+
+New Responsibility: Implement a local prioritization engine using Metabolic Load and Resource Offer from bounties to decide which local processes or incoming tasks to prioritize, pause, or reject.
+
+New Responsibility: Implement "Congestion Pricing" (internal) for local node under high load, temporarily increasing internal "price" for sub-module actions.
+
+New Responsibility: Allow modules to signal "backpressure" (e.g., "I'm currently at max capacity").
+
+Dependencies: src/core/eventBus.js, src/data/resourceManager.js, src/core/taskScheduler.js, src/networking/dataTransport.js, src/modules/ai/planner.js, src/modules/ai/behavioralModel.js, src/modules/proprioceptionModule.js.
+
+New Phase: Knowledge Preservation & Advanced Governance
+
+Step 39: src/modules/knowledgePreservation.js
+
+Purpose: Ensure long-term preservation and external accessibility of Agent Neo's collective knowledge.
+
+Responsibilities:
+
+Periodic Snapshots: Periodically (e.g., every six months) create a static snapshot of the entire knowledgeGraph.js state.
+
+BitTorrent V2 Packaging: Package this snapshot as a BitTorrent V2 file (using dataTransport.js for chunking and Merkle tree generation).
+
+Public Seeding: Seed this BitTorrent V2 file on the public torrent network, making Agent Neo's historical knowledge accessible outside the live DApp network.
+
+Disaster Recovery: These snapshots serve as a "Genesis block" to reboot the collective intelligence from a known-good state in case of catastrophic failure.
+
+Dependencies: src/core/eventBus.js, src/modules/knowledge/knowledgeManager.js, src/networking/dataTransport.js.
+
+Step 40: src/modules/governance.js
+
+Purpose: Manage the decentralized governance processes, including constitutional amendments and DAO operations.
+
+Responsibilities:
+
+Progressive Decentralization: Orchestrate the gradual transfer of control from the founding team to a community-driven DAO.
+
+Constitutional Amendment Proposals: Receive proposals for constitutional changes (from ethicsModule.js or selfImprovementEngine.js).
+
+Competitive Red Team Marketplace: Manage the bounty system for finding flaws in proposed changes, coordinating Distributed Juries for validation.
+
+Reputation-Gated Voting: Implement voting mechanisms where influence is proportional to Reputation Score (from economy.js), not Trust balance.
+
+Sortition for Juries: Select juries via sortition from a pool of qualified (minimum Reputation) nodes.
+
+Schnorr Signatures: Utilize Schnorr signatures (via crypto.js) for efficient aggregation of multiple votes into a single, constant-size signature.
+
+Dependencies: src/core/eventBus.js, src/core/economy.js, src/core/crypto.js, src/modules/guilds/guildMembership.js, src/modules/ethicsModule.js, src/modules/ai/selfImprovementEngine.js, src/core/consensusManager.js.
+
+Phase 8: Cross-Cutting Concerns & Documentation
+This phase introduces new modules and components that address overarching concerns, improve user interaction, and provide essential development guidelines.
+
+Step 41: src/modules/toolManifest.js
+
+Purpose: Define and enforce the standardized manifest structure for all executable tools and skill modules.
+
+Responsibilities:
+
+Define a JSON schema for the ToolManifest, including fields for:
+
+toolName, version, description
+
+expectedInputs (schema for data types, optionality)
+
+expectedOutputs (schema for data types)
+
+declaredResourceUsage (e.g., estimatedCPUSeconds, estimatedMemoryMB, estimatedNetworkBytes)
+
+allowedBrowserAPIs (whitelist of window or navigator APIs the tool is permitted to use in its Web Worker sandbox).
+
+inferredSkills (semantic tags from knowledgeIngestion.js).
+
+Provide validation functions to ensure new tool manifests conform to this schema.
+
+Integrate with skillValidator.js to use this manifest for static analysis and runtime checks.
+
+Integrate with proprioceptionModule.js to verify actual resource usage against declared usage.
+
+Dependencies: src/core/utils.js, src/modules/skillValidator.js, src/modules/proprioceptionModule.js.
+
+Step 42: src/ui/components/settingsPanel.js
+
+Purpose: Provide a user interface for configuring Agent Neo's operational settings, including guild participation and resource sharing.
+
+Responsibilities:
+
+Create UI elements (toggles, sliders, input fields) for:
+
+Opt-in/out of dynamic TRUST GUILD participation.
+
+Setting the percentage of computational resources to share with COMPUTATIONAL GUILD members.
+
+Setting the percentage of storage to share with DATA STORAGE GUILD members.
+
+Setting the percentage of network bandwidth to share for DATA TRANSFER GUILD services.
+
+Configuring GLOBAL_RESOURCE_ACCESS_TOKENS usage preferences.
+
+Listen for user input on these controls and dispatch ui:settings_updated events on eventBus.js with the new configuration.
+
+Integrate with config.js for initial values and resourceBalancer.js, guildMembership.js, economy.js to apply changes.
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js, src/core/config.js.
+
+Step 43: src/modules/knowledge/contradictionBountyManager.js
+
+Purpose: Manage the lifecycle of bounties for resolving semantic contradictions in the knowledge graph.
+
+Responsibilities:
+
+Listen for knowledge:contradiction_detected events from knowledgeGraph.js or curiosityEngine.js.
+
+Automatically create a high-priority bounty (funded by Common Good Fund via economy.js) for "proving which of these contradictory facts is correct."
+
+Broadcast the bounty to the network via p2pService.js (on a dedicated topic).
+
+Receive bids from modules/guilds (via p2pService.js), which include evidence.
+
+Coordinate a "Confirmation Jury" (via consensusManager.js or a specialized guildVoting.js process) to evaluate evidence and determine the correct fact.
+
+Upon resolution, reward the winning module/guild (via economy.js) and trigger selfImprovementEngine.js to slash the reputation of the DID that created the disproven fact.
+
+Update knowledgeGraph.js with the resolved fact and mark the conflicting fact as 'disproven' or 'archived'.
+
+Dependencies: src/core/eventBus.js, src/core/economy.js, src/networking/p2pService.js, src/modules/ai/knowledgeGraph.js, src/core/consensusManager.js, src/modules/guilds/guildVoting.js, src/modules/ai/selfImprovementEngine.js.
+
+Step 44: src/modules/governance/codeDeploymentManager.js
+
+Purpose: Manage the reputation-weighted canary deployment and gradual rollout of new code updates (modules, skills, protocol changes).
+
+Responsibilities:
+
+Listen for selfImprovement:new_code_proposal events (e.g., from selfImprovementEngine.js for mutations/compositions, or governance.js for protocol changes).
+
+Upon approval, select a small, random subset of high-reputation nodes (from guildMembership.js) that have opted into a "canary" program.
+
+Signal these canary nodes (via p2pService.js) to download and activate the new code.
+
+Monitor proprioceptionModule.js reports from canary nodes for high-alert metrics (resource consumption, error rates, ethical near-misses) related to the new code.
+
+If performance is flawless for a set period, initiate a gradual, automated rollout to the rest of the network, with rollout speed proportional to continued positive performance.
+
+Ensure the user remains the final gatekeeper for accepting the update on their device (via appUI.js prompts).
+
+Dependencies: src/core/eventBus.js, src/modules/ai/selfImprovementEngine.js, src/modules/governance.js, src/modules/guilds/guildMembership.js, src/networking/p2pService.js, src/modules/proprioceptionModule.js, src/ui/appUI.js.
+
+Step 45: src/modules/economy/globalResourceAccessManager.js
+
+Purpose: Manage the allocation and bidding for Global Resource Access Tokens (GRATs) to prevent the "Tragedy of the Commons" for shared external resources.
+
+Responsibilities:
+
+Maintain the pool of virtual, non-transferable GRATs for each governed public API (e.g., maxSearchApiCallsPerHour from config.js), funded by the Common Good Fund via economy.js.
+
+Implement a micro-auction mechanism: when a module needs to use a governed external API, it must first request a GRAT. If demand exceeds supply, modules bid Trust for the right to access the resource.
+
+Integrate with planner.js and toolManifest.js to ensure tools declare their external API dependencies.
+
+Enforce GRAT consumption when a tool successfully makes an external API call.
+
+Periodically adjust GRAT supply based on observed network usage and external API rate limits.
+
+Dependencies: src/core/eventBus.js, src/core/economy.js, src/core/config.js, src/modules/ai/planner.js, src/modules/toolManifest.js.
+
+Step 46: src/ui/components/sessionContextDisplay.js
+
+Purpose: Visualize the agent's current session context, including conversation history, generated artifacts, and the project goal.
+
+Responsibilities:
+
+Listen for session:context_updated events from sessionContext.js.
+
+Render the conversation history and CIDs of generated artifacts.
+
+Visually represent the "Project Goal" and potentially a simplified "goal context graph" (e.g., a tree or simple node-link diagram showing sub-goals and dependencies).
+
+Provide a UI control to reset the session context.
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js, src/modules/sessionContext.js.
+
+Step 47: src/ui/components/taskFeedback.js
+
+Purpose: Allow users to provide subjective feedback on completed tasks.
+
+Responsibilities:
+
+When a task completes, prompt the user with a simple rating mechanism (e.g., 1-5 stars, "Poor," "Good," "Excellent").
+
+Capture the user's rating and dispatch a ui:task_feedback_provided event (including task ID and rating) to appUI.js.
+
+Integrate with proofOfHumanEndorsement.js to trigger PoHE generation.
+
+Dependencies: src/core/eventBus.js, src/ui/components/baseComponent.js, src/modules/ai/proofOfHumanEndorsement.js.
+
+Step 48: src/docs/optimization_guidelines.md
+
+Purpose: Document and enforce best practices for low-level browser API optimization across the DApp.
+
+Responsibilities:
+
+Detail specific techniques: DocumentFragment, requestAnimationFrame, requestIdleCallback, efficient iteration (for...of), WeakMaps/WeakSets for caching, CSS optimizations (hardware acceleration, avoiding recalculations).
+
+Provide examples and rationale for each optimization.
+
+Integrate into code review processes to ensure adherence.
+
+Dependencies: None (documentation).
