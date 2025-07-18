@@ -74,6 +74,40 @@ class CryptoManager {
     }
 
     /**
+     * Generate SHA-256 hash of data
+     * @param {string} data - Data to hash
+     * @returns {Promise<string>} - Base64 encoded hash
+     */
+    async hash(data) {
+        try {
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(data);
+            const hashBuffer = await this.webCrypto.subtle.digest('SHA-256', dataBuffer);
+            return this.arrayBufferToBase64(hashBuffer);
+        } catch (error) {
+            console.error('❌ Hash generation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate SHA-512 hash of data
+     * @param {string} data - Data to hash
+     * @returns {Promise<string>} - Base64 encoded hash
+     */
+    async hashSHA512(data) {
+        try {
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(data);
+            const hashBuffer = await this.webCrypto.subtle.digest('SHA-512', dataBuffer);
+            return this.arrayBufferToBase64(hashBuffer);
+        } catch (error) {
+            console.error('❌ SHA-512 hash generation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Sign a message using BLS signature
      * @param {string} message - Message to sign
      * @param {string} privateKey - Private key in base64 format

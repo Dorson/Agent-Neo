@@ -40,6 +40,9 @@ import ZeroKnowledgeProofSystem from './modules/ZeroKnowledgeProofSystem.js';
 import SkillModuleSandbox from './modules/SkillModuleSandbox.js';
 import DecentralizedSkillModuleLoader from './modules/DecentralizedSkillModuleLoader.js';
 import EnhancedSettingsManager from './modules/EnhancedSettingsManager.js';
+import GuildManager from './modules/GuildManager.js';
+import P2PService from './network/P2PService.js';
+import LocalLedger from './core/LocalLedger.js';
 
 // Import new UI components
 import TasksView from './ui/components/TasksView.js';
@@ -69,6 +72,9 @@ class AgentNeoApp {
         this.skillModuleSandbox = new SkillModuleSandbox();
         this.decentralizedSkillModuleLoader = new DecentralizedSkillModuleLoader();
         this.enhancedSettingsManager = new EnhancedSettingsManager();
+        this.guildManager = new GuildManager();
+        this.p2pService = new P2PService();
+        this.localLedger = new LocalLedger();
         
         // Performance monitoring
         this.performanceMetrics = {
