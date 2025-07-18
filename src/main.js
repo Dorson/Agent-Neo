@@ -27,7 +27,7 @@ import IdentitySetup from './ui/components/IdentitySetup.js';
 // Import existing core modules
 import TaskAuctionSystem from './modules/TaskAuctionSystem.js';
 import SessionContextModule from './modules/SessionContextModule.js';
-import IPFSModule from './modules/IPFSModule.js';
+import NativeIPFSModule from './modules/IPFSModule.js';
 import TaskManager from './modules/TaskManager.js';
 import VoiceInterface from './modules/VoiceInterface.js';
 import NetworkTopologyOptimizer from './modules/NetworkTopologyOptimizer.js';
@@ -77,7 +77,7 @@ class AgentNeoApp {
         // Initialize existing core modules
         this.taskAuctionSystem = new TaskAuctionSystem();
         this.sessionContextModule = new SessionContextModule();
-        this.ipfsModule = new IPFSModule();
+        this.ipfsModule = new NativeIPFSModule();
         this.taskManager = new TaskManager();
         this.voiceInterface = new VoiceInterface();
         this.networkTopologyOptimizer = new NetworkTopologyOptimizer();

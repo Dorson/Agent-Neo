@@ -10,14 +10,7 @@
     "build": "echo 'No build needed - native JS/HTML/CSS'",
     "test": "echo 'No tests yet - native implementation'"
   },
-  "dependencies": {
-    "@helia/dag-cbor": "^4.0.2",
-    "@helia/dag-json": "^3.0.2", 
-    "@libp2p/websockets": "^8.0.20",
-    "@libp2p/webrtc": "^4.0.35",
-    "helia": "^4.2.4",
-    "libp2p": "^1.8.1"
-  },
+  "dependencies": {},
   "devDependencies": {},
   "optionalDependencies": {},
   "keywords": [
@@ -28,7 +21,10 @@
     "native-js",
     "pwa",
     "agent",
-    "hive-mind"
+    "hive-mind",
+    "blockchain",
+    "webrtc",
+    "self-evolving"
   ],
   "homepage": "https://github.com/your-org/agent-neo",
   "repository": {
