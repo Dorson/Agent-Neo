@@ -22,6 +22,7 @@ import uiManager from './ui/UIManager.js';
 import dashboard from './ui/components/Dashboard.js';
 import chat from './ui/components/Chat.js';
 import settings from './ui/components/Settings.js';
+import IdentitySetup from './ui/components/IdentitySetup.js';
 
 // Import existing core modules
 import TaskAuctionSystem from './modules/TaskAuctionSystem.js';
@@ -44,8 +45,11 @@ import GuildManager from './modules/GuildManager.js';
 import P2PService from './network/P2PService.js';
 import LocalLedger from './core/LocalLedger.js';
 
-// Import new UI components
-import TasksView from './ui/components/TasksView.js';
+        // Import new UI components
+        import TasksView from './ui/components/TasksView.js';
+        
+        // Initialize identity setup component
+        this.identitySetup = new IdentitySetup();
 
 class AgentNeoApp {
     constructor() {
@@ -75,6 +79,9 @@ class AgentNeoApp {
         this.guildManager = new GuildManager();
         this.p2pService = new P2PService();
         this.localLedger = new LocalLedger();
+        
+        // Initialize identity setup component
+        this.identitySetup = new IdentitySetup();
         
         // Performance monitoring
         this.performanceMetrics = {
