@@ -196,7 +196,74 @@ export const config = {
         'https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js',
         'https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js',
         'https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js'
-    ]
+    ],
+
+    // Web Workers configuration
+    webWorkers: {
+        maxConcurrentWorkers: 8,
+        defaultTimeout: 30000, // 30 seconds
+        resourceLimits: {
+            maxMemory: 100 * 1024 * 1024, // 100MB
+            maxCpuTime: 60000, // 60 seconds
+            maxExecutionTime: 30000, // 30 seconds
+            maxMessages: 1000
+        },
+        types: {
+            tool: {
+                maxWorkers: 4,
+                timeout: 10000,
+                resourceLimits: {
+                    maxMemory: 50 * 1024 * 1024, // 50MB
+                    maxCpuTime: 10000 // 10 seconds
+                }
+            },
+            skill: {
+                maxWorkers: 3,
+                timeout: 20000,
+                resourceLimits: {
+                    maxMemory: 75 * 1024 * 1024, // 75MB
+                    maxCpuTime: 20000 // 20 seconds
+                }
+            },
+            crypto: {
+                maxWorkers: 2,
+                timeout: 60000,
+                resourceLimits: {
+                    maxMemory: 200 * 1024 * 1024, // 200MB
+                    maxCpuTime: 60000 // 60 seconds
+                }
+            },
+            ai: {
+                maxWorkers: 2,
+                timeout: 120000,
+                resourceLimits: {
+                    maxMemory: 500 * 1024 * 1024, // 500MB
+                    maxCpuTime: 120000 // 120 seconds
+                }
+            }
+        }
+    },
+
+    // Federated Learning configuration
+    federatedLearning: {
+        privacyBudget: 10.0,
+        noiseMultiplier: 1.0,
+        maxParticipants: 50,
+        minParticipants: 5,
+        roundTimeout: 300000, // 5 minutes
+        byzantineTolerance: 0.33, // Up to 33% Byzantine participants
+        differentialPrivacy: {
+            epsilon: 1.0,
+            delta: 1e-5,
+            sensitivity: 1.0
+        },
+        modelDefaults: {
+            learningRate: 0.01,
+            batchSize: 32,
+            epochs: 1,
+            hiddenSize: 64
+        }
+    }
 };
 
 // Global resource access tokens (would be configured per deployment)
