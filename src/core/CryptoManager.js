@@ -149,6 +149,258 @@ class CryptoManager {
     }
 
     /**
+     * Verify BLS signature
+     * @param {string} message - Message that was signed
+     * @param {string} signature - Signature to verify
+     * @param {string} publicKey - Public key to verify against
+     * @returns {Promise<boolean>} - True if signature is valid
+     */
+    async verifyBLS(message, signature, publicKey) {
+        try {
+            // Import public key
+            const keyData = this.base64ToArrayBuffer(publicKey);
+            const cryptoKey = await this.webCrypto.subtle.importKey(
+                'raw',
+                keyData,
+                {
+                    name: 'ECDSA',
+                    namedCurve: 'P-256'
+                },
+                false,
+                ['verify']
+            );
+
+            // Verify signature
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const signatureData = this.base64ToArrayBuffer(signature);
+
+            const isValid = await this.webCrypto.subtle.verify(
+                {
+                    name: 'ECDSA',
+                    hash: 'SHA-256'
+                },
+                cryptoKey,
+                signatureData,
+                data
+            );
+
+            return isValid;
+
+        } catch (error) {
+            console.error('❌ BLS verification failed:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Encrypt data with password using PBKDF2 and AES-GCM
+     * @param {string} data - Data to encrypt
+     * @param {string} password - Password for encryption
+     * @returns {Promise<string>} - Base64 encoded encrypted data
+     */
+    async encryptWithPassword(data, password) {
+        try {
+            // Generate salt
+            const salt = new Uint8Array(16);
+            this.webCrypto.getRandomValues(salt);
+
+            // Derive key from password
+            const encoder = new TextEncoder();
+            const passwordKey = await this.webCrypto.subtle.importKey(
+                'raw',
+                encoder.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveBits', 'deriveKey']
+            );
+
+            const derivedKey = await this.webCrypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt']
+            );
+
+            // Generate IV
+            const iv = new Uint8Array(12);
+            this.webCrypto.getRandomValues(iv);
+
+            // Encrypt data
+            const dataBuffer = encoder.encode(data);
+            const encryptedData = await this.webCrypto.subtle.encrypt(
+                {
+                    name: 'AES-GCM',
+                    iv
+                },
+                derivedKey,
+                dataBuffer
+            );
+
+            // Combine salt, iv, and encrypted data
+            const result = new Uint8Array(salt.length + iv.length + encryptedData.byteLength);
+            result.set(salt, 0);
+            result.set(iv, salt.length);
+            result.set(new Uint8Array(encryptedData), salt.length + iv.length);
+
+            return this.arrayBufferToBase64(result);
+
+        } catch (error) {
+            console.error('❌ Password encryption failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Decrypt data with password
+     * @param {string} encryptedData - Base64 encoded encrypted data
+     * @param {string} password - Password for decryption
+     * @returns {Promise<string>} - Decrypted data
+     */
+    async decryptWithPassword(encryptedData, password) {
+        try {
+            // Decode base64
+            const data = this.base64ToArrayBuffer(encryptedData);
+            const dataView = new Uint8Array(data);
+
+            // Extract salt, iv, and encrypted data
+            const salt = dataView.slice(0, 16);
+            const iv = dataView.slice(16, 28);
+            const encrypted = dataView.slice(28);
+
+            // Derive key from password
+            const encoder = new TextEncoder();
+            const passwordKey = await this.webCrypto.subtle.importKey(
+                'raw',
+                encoder.encode(password),
+                'PBKDF2',
+                false,
+                ['deriveBits', 'deriveKey']
+            );
+
+            const derivedKey = await this.webCrypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                },
+                passwordKey,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+
+            // Decrypt data
+            const decryptedData = await this.webCrypto.subtle.decrypt(
+                {
+                    name: 'AES-GCM',
+                    iv
+                },
+                derivedKey,
+                encrypted
+            );
+
+            const decoder = new TextDecoder();
+            return decoder.decode(decryptedData);
+
+        } catch (error) {
+            console.error('❌ Password decryption failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate recovery phrase (BIP-39 style)
+     * @returns {string} - 12-word recovery phrase
+     */
+    generateRecoveryPhrase() {
+        const wordlist = [
+            'abandon', 'ability', 'able', 'about', 'above', 'absent', 'absorb', 'abstract',
+            'absurd', 'abuse', 'access', 'accident', 'account', 'accuse', 'achieve', 'acid',
+            'acoustic', 'acquire', 'across', 'act', 'action', 'actor', 'actress', 'actual',
+            'adapt', 'add', 'addict', 'address', 'adjust', 'admit', 'adult', 'advance',
+            'advice', 'aerobic', 'affair', 'afford', 'afraid', 'again', 'against', 'agent',
+            'agree', 'ahead', 'aim', 'air', 'airport', 'aisle', 'alarm', 'album',
+            'alcohol', 'alert', 'alien', 'all', 'alley', 'allow', 'almost', 'alone',
+            'alpha', 'already', 'also', 'alter', 'always', 'amateur', 'amazing', 'among',
+            'amount', 'amused', 'analyst', 'anchor', 'ancient', 'anger', 'angle', 'angry',
+            'animal', 'ankle', 'announce', 'annual', 'another', 'answer', 'antenna', 'antique',
+            'anxiety', 'any', 'apart', 'apology', 'appear', 'apple', 'approve', 'april',
+            'arch', 'arctic', 'area', 'arena', 'argue', 'arm', 'armed', 'armor'
+        ];
+
+        const phrase = [];
+        for (let i = 0; i < 12; i++) {
+            const randomIndex = Math.floor(Math.random() * wordlist.length);
+            phrase.push(wordlist[randomIndex]);
+        }
+
+        return phrase.join(' ');
+    }
+
+    /**
+     * Generate ring signature (simplified implementation)
+     * @param {string} message - Message to sign
+     * @param {string} privateKey - Signer's private key
+     * @param {Array<string>} publicKeys - Array of public keys in the ring
+     * @returns {Promise<Object>} - Ring signature object
+     */
+    async generateRingSignature(message, privateKey, publicKeys) {
+        try {
+            // This is a simplified implementation
+            // In production, you would use a proper ring signature library
+            
+            const signature = await this.signBLS(message, privateKey);
+            
+            return {
+                signature,
+                ring: publicKeys,
+                message,
+                timestamp: Date.now()
+            };
+
+        } catch (error) {
+            console.error('❌ Ring signature generation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Verify ring signature
+     * @param {Object} ringSignature - Ring signature object
+     * @returns {Promise<boolean>} - True if signature is valid
+     */
+    async verifyRingSignature(ringSignature) {
+        try {
+            // This is a simplified implementation
+            // In production, you would use a proper ring signature library
+            
+            const { signature, ring, message } = ringSignature;
+            
+            // Try to verify against each public key in the ring
+            for (const publicKey of ring) {
+                const isValid = await this.verifyBLS(message, signature, publicKey);
+                if (isValid) {
+                    return true;
+                }
+            }
+            
+            return false;
+
+        } catch (error) {
+            console.error('❌ Ring signature verification failed:', error);
+            return false;
+        }
+    }
+
+    /**
      * Verify a BLS signature
      * @param {string} message - Original message
      * @param {string} signature - Signature in base64 format

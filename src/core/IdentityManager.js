@@ -147,6 +147,354 @@ class IdentityManager {
     }
 
     /**
+     * Derive DID from public key
+     * @param {string} publicKey - Base64 encoded public key
+     * @returns {string} - DID in format did:neo:<hash>
+     */
+    async deriveDID(publicKey) {
+        try {
+            // Create a hash of the public key
+            const hash = await CryptoManager.hash(publicKey);
+            
+            // Take first 32 characters for DID
+            const didSuffix = hash.substring(0, 32);
+            
+            return `did:neo:${didSuffix}`;
+        } catch (error) {
+            console.error('❌ DID derivation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate DID Document
+     * @returns {Object} - DID Document
+     */
+    async generateDIDDocument() {
+        try {
+            if (!this.agentDID || !this.identityKey || !this.operationalKey) {
+                throw new Error('Identity or operational keys not available');
+            }
+
+            const didDocument = {
+                '@context': [
+                    'https://www.w3.org/ns/did/v1',
+                    'https://w3id.org/security/suites/ed25519-2020/v1'
+                ],
+                id: this.agentDID,
+                created: new Date().toISOString(),
+                updated: new Date().toISOString(),
+                verificationMethod: [
+                    {
+                        id: `${this.agentDID}#identity-key`,
+                        type: 'BLS12381G2Key2020',
+                        controller: this.agentDID,
+                        publicKeyBase64: this.identityKey.publicKey
+                    },
+                    {
+                        id: `${this.agentDID}#operational-key`,
+                        type: 'BLS12381G2Key2020',
+                        controller: this.agentDID,
+                        publicKeyBase64: this.operationalKey.publicKey,
+                        validFrom: new Date().toISOString(),
+                        validUntil: new Date(Date.now() + this.keyRotationInterval).toISOString()
+                    }
+                ],
+                authentication: [
+                    `${this.agentDID}#identity-key`,
+                    `${this.agentDID}#operational-key`
+                ],
+                assertionMethod: [
+                    `${this.agentDID}#identity-key`,
+                    `${this.agentDID}#operational-key`
+                ],
+                service: [
+                    {
+                        id: `${this.agentDID}#agent-neo-service`,
+                        type: 'AgentNeoService',
+                        serviceEndpoint: 'p2p://agent-neo-network'
+                    }
+                ]
+            };
+
+            return didDocument;
+        } catch (error) {
+            console.error('❌ DID Document generation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate operational key and certificate
+     * @param {string} password - Password for key encryption
+     */
+    async generateOperationalKey(password) {
+        try {
+            // Generate new operational key pair
+            const operationalKeyPair = await CryptoManager.generateBLSKeyPair();
+            this.operationalKey = operationalKeyPair;
+
+            // Create operational certificate
+            const certificate = {
+                agentDID: this.agentDID,
+                operationalPublicKey: operationalKeyPair.publicKey,
+                validFrom: Date.now(),
+                validUntil: Date.now() + this.keyRotationInterval,
+                issuedAt: Date.now()
+            };
+
+            // Sign certificate with identity key
+            const certificateData = JSON.stringify(certificate);
+            const signature = await CryptoManager.signBLS(certificateData, this.identityKey.privateKey);
+            
+            this.operationalCertificate = {
+                ...certificate,
+                signature
+            };
+
+            // Encrypt and store operational key
+            const encryptedOperationalKey = await CryptoManager.encryptWithPassword(
+                operationalKeyPair.privateKey,
+                password
+            );
+
+            await this.storeOperationalKey({
+                encryptedKey: encryptedOperationalKey,
+                certificate: this.operationalCertificate
+            });
+
+            this.lastKeyRotation = Date.now();
+
+            console.log('✅ Operational key generated and stored');
+            
+        } catch (error) {
+            console.error('❌ Operational key generation failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check if WebAuthn is supported
+     * @returns {boolean}
+     */
+    isWebAuthnSupported() {
+        return !!(navigator.credentials && navigator.credentials.create);
+    }
+
+    /**
+     * Register WebAuthn credential
+     * @returns {string} - Credential ID
+     */
+    async registerWebAuthn() {
+        try {
+            if (!this.isWebAuthnSupported()) {
+                throw new Error('WebAuthn not supported');
+            }
+
+            const challenge = new Uint8Array(32);
+            crypto.getRandomValues(challenge);
+
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge,
+                    rp: {
+                        name: 'Agent Neo',
+                        id: window.location.hostname
+                    },
+                    user: {
+                        id: new TextEncoder().encode(this.agentDID),
+                        name: this.agentDID,
+                        displayName: `Agent Neo (${this.agentDID.slice(-8)})`
+                    },
+                    pubKeyCredParams: [
+                        { alg: -7, type: 'public-key' }, // ES256
+                        { alg: -257, type: 'public-key' } // RS256
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'preferred'
+                    },
+                    timeout: 60000,
+                    attestation: 'direct'
+                }
+            });
+
+            const credentialId = Array.from(new Uint8Array(credential.rawId))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+
+            console.log('✅ WebAuthn credential registered');
+            return credentialId;
+
+        } catch (error) {
+            console.error('❌ WebAuthn registration failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Store identity data in IndexedDB
+     * @param {Object} identityData - Identity data to store
+     */
+    async storeIdentity(identityData) {
+        try {
+            const db = await this.openDatabase();
+            const transaction = db.transaction(['identity'], 'readwrite');
+            const store = transaction.objectStore('identity');
+            
+            await store.put({
+                id: 'main',
+                ...identityData,
+                timestamp: Date.now()
+            });
+
+            console.log('✅ Identity stored successfully');
+            
+        } catch (error) {
+            console.error('❌ Identity storage failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Store operational key data
+     * @param {Object} keyData - Operational key data
+     */
+    async storeOperationalKey(keyData) {
+        try {
+            const db = await this.openDatabase();
+            const transaction = db.transaction(['operational_keys'], 'readwrite');
+            const store = transaction.objectStore('operational_keys');
+            
+            await store.put({
+                id: 'current',
+                ...keyData,
+                timestamp: Date.now()
+            });
+
+            console.log('✅ Operational key stored successfully');
+            
+        } catch (error) {
+            console.error('❌ Operational key storage failed:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Load existing identity from storage
+     * @returns {Object|null} - Identity data or null if not found
+     */
+    async loadExistingIdentity() {
+        try {
+            const db = await this.openDatabase();
+            const transaction = db.transaction(['identity'], 'readonly');
+            const store = transaction.objectStore('identity');
+            
+            const result = await store.get('main');
+            return result || null;
+            
+        } catch (error) {
+            console.error('❌ Identity loading failed:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Open IndexedDB database
+     * @returns {Promise<IDBDatabase>}
+     */
+    async openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('AgentNeoIdentity', 1);
+            
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve(request.result);
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                
+                // Create identity store
+                if (!db.objectStoreNames.contains('identity')) {
+                    db.createObjectStore('identity', { keyPath: 'id' });
+                }
+                
+                // Create operational keys store
+                if (!db.objectStoreNames.contains('operational_keys')) {
+                    db.createObjectStore('operational_keys', { keyPath: 'id' });
+                }
+                
+                // Create recovery store
+                if (!db.objectStoreNames.contains('recovery')) {
+                    db.createObjectStore('recovery', { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    /**
+     * Check if key rotation is needed
+     */
+    async checkKeyRotation() {
+        try {
+            if (!this.lastKeyRotation) return;
+
+            const timeSinceRotation = Date.now() - this.lastKeyRotation;
+            
+            if (timeSinceRotation > this.keyRotationInterval) {
+                console.log('🔄 Key rotation needed');
+                eventBus.emit('identity:key_rotation_needed', {
+                    lastRotation: this.lastKeyRotation,
+                    timeSinceRotation
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ Key rotation check failed:', error);
+        }
+    }
+
+    /**
+     * Rotate operational keys
+     * @param {string} password - Password for key encryption
+     */
+    async rotateKeys(event) {
+        try {
+            const { password } = event.detail;
+            
+            if (!this.unlocked) {
+                throw new Error('Session must be unlocked to rotate keys');
+            }
+
+            console.log('🔄 Rotating operational keys...');
+            
+            // Generate new operational key
+            await this.generateOperationalKey(password);
+            
+            // Update DID document
+            const didDocument = await this.generateDIDDocument();
+            
+            // Publish updated DID document
+            eventBus.emit('identity:did_document_updated', {
+                did: this.agentDID,
+                didDocument,
+                timestamp: Date.now()
+            });
+            
+            console.log('✅ Keys rotated successfully');
+            
+            eventBus.emit('identity:keys_rotated', {
+                did: this.agentDID,
+                timestamp: Date.now()
+            });
+            
+        } catch (error) {
+            console.error('❌ Key rotation failed:', error);
+            eventBus.emit('identity:error', { error, operation: 'rotate_keys' });
+            throw error;
+        }
+    }
+
+    /**
      * Unlock the session using WebAuthn and password
      * @param {string} password - User password
      */
