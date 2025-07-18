@@ -47,6 +47,11 @@ import LocalLedger from './core/LocalLedger.js';
 import WebWorkersManager from './core/webWorkers.js';
 import FederatedLearningModule from './modules/FederatedLearningModule.js';
 
+// Import enhanced modules
+import TrustEconomy from './modules/TrustEconomy.js';
+import LocalAIProcessor from './modules/LocalAIProcessor.js';
+import CryptoManager from './core/CryptoManager.js';
+
 // Import missing critical modules
 import ResourceManager from './data/resourceManager.js';
 import GuildMembership from './modules/guilds/guildMembership.js';
@@ -96,6 +101,11 @@ class AgentNeoApp {
         this.localLedger = new LocalLedger();
         this.webWorkersManager = WebWorkersManager;
         this.federatedLearningModule = new FederatedLearningModule();
+        
+        // Initialize enhanced modules
+        this.trustEconomy = TrustEconomy;
+        this.localAIProcessor = LocalAIProcessor;
+        this.cryptoManager = CryptoManager;
         
         // Initialize missing critical modules
         this.resourceManager = new ResourceManager();
