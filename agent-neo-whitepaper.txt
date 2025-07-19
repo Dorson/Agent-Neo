@@ -11,9 +11,44 @@ Think deep. Use self reasoning, self reflection and self correction for the inve
 
 
 
-Agent Neo: A White Paper on a Self-Evolving, Decentralized AI Agent DApp
+Agent Neo: A White Paper on a Self-Evolving, Decentralized AI Agent DApp.
 
-0. The Agent Neo node dapp should have self imposed, local resource limits, so that it would allow user devices to function without excessive resource drain.
+
+
+0.0.1 Definitions and core concepts.
+
++ TRUST in the Agent Neo Decentralized Network of Nodes is a non-transferable value token.
+Trust is defined and managed by each node internally ! Other nodes of the decentralized
+network can propose or suggest trust level values, but each Agent Neo node can decide for how 
+much to trust other nodes. Each node has to calculate their internal level of TRUST points to other Agent Neo Nodes for practical decisions.
+
++ TRUST GUILDS are voluntary collaborations that are based and formed on the basis of the internal TRUST point evaluation and TRUST point minimal level limits. Nodes with exceptionally high and mutual TRUST point levels, can form voluntary TRUST GUILDs on mutual agreement or evaluation of proposal. 
+
++ Cryptographic proof of computational cost or data storage cost for the benefit of the Agent Neo Network can be an indication for TRUST POINT reward calculation that each node can calculate and evaluate internally.
+
++ The valid provision of service to the Agent Neo node can directly influence the TRUST point reward in the internal calculation of the TRUST point evaluation.
+
++ The negative results of service provision or harmful actions can lead to internal TRUST point reduction, banning, blocking , service refusal, network exclusion,  or black-listing of hostile or harmful network nodes. The punishment or service refusal can happen on the individual level of each Agent Neo node or after a valid consensus on the group level of the TRUST GUILD.
+
++ Computational demand is a metabolic resource metric. Data storage demand is a metabolic  resource metric. Human user interaction and participation is a metabolic resource metric, because human users have limited attention and time resources. Time is a metabolic resource metric. Data transmission rate and network bandwidth rate is a metabolic resource metric.
+API calls, data or ping requests, or messaging requests, or association requests are metabolic resource metrics, because they demand metabolic calculations on the side of the requested node. Cognitive complexity of the task is a metabolic resource metric, similar but not same as computational demand. NON-automated, verified human and manual cryptographic signature confirmation is a metabolic resource metric. Complex cryptographic signature confirmation is a metabolic resource metric.
+
+
++ The percentage of Wrong Hypothesis vs Correct Hypothesis is a metabolic resource metric in the knowledge synthesis. Successful vs unsuccessful data requests is a metabolic resource metric. 
+Guardrail Synthesis Success Rate for How many "Heuristic Guardrails" are successfully synthesized from analyzing failure cases is a metabolic resource metric in the knowledge synthesis. 
+
+
++ Continued reliability of service provision with high up-time is a trust value metric. Correct and Valid data provision is a trust value metric. Speed of service provision is a trust value metric. Cryptographic proof of computational service provision is a trust value metric. Cryptographic proof of decentralized network data storage provision is a trust value metric. Age of the constantly HIGH TRUST point amount is a trust value metric. Correct and true data transmission rate is a trust value metric. Cryptographically proven reciprocity of computational task completion is a trust value metric.
+
++ Wrong or corrupted data transmission is a punishment metric. Wrong cryptographic proof is a punishment metric. Wrong provision of facts or knowledge is a punishment metric by consensus of the peer nodes.
+
++ Some trust value metrics can be only proven by individual Agent Neo nodes. Cryptographic proof can be a trust metric that can be proven in a consensus group of nodes or TRUST GUILDs , when at least 70% of the active TRUST GUILD peers calculate the same cryptographic proof.
+
++ Trust VALUE Decay and Recency. Trust points should not be permanent. The trust value assigned to another node should slowly decay over time if there are no new interactions. A successful interaction would refresh and boost the trust, but a long period of silence should very slowly lower trust levels. Verifiable and unique user IDs can maintain their trust point levels over time.
+
+
+0.0.2 The Agent Neo node dapp should have self imposed, local resource limits, so that it would allow user devices to function without excessive resource drain. Agent Neo node user devices and resources should be respected !
+
 
 0.1 Agent Neo should be agnostic to external libraries or third party frameworks. Run in standard JS, standard CSS, and standard HTML. Make it a fully working and scalable native JS, HTML, CSS Dapp.
 
@@ -1035,6 +1070,10 @@ Why This is Essential: This allows the agent's internal economy to mature from a
 
 The Inevitable Problem: The agent's "Metabolic Load" only accounts for its local resource consumption. It does not account for its impact on shared, finite global resources, such as the API call limits of free public services (e.g., Wikipedia, public search engines). A successful network of a million Agent Neo nodes could easily overwhelm these services, leading to IP bans and cutting the entire ecosystem off from vital information sources. This is a classic Tragedy of the Commons.
 
+"Metabolic Load" or more formally as a cost vector. Could be used for the calculation of the  proof of resources that were spend. Or to predict task complexity with estimations.
+
+MetabolicLoad_Vector = [ Cost_Compute, , Cost_Storage, Cost_Net, Cost_Cognitive, Cost_Human_Time ]
+
 The Architectural Solution: Global Resource Access Tokens (GRATs).
 The Commons Treasury: The network's Common Good Fund (CGF) acts as the steward of these shared resources. For a given public API, the CGF maintains a pool of virtual, non-transferable GRATs, representing the network's total safe-use limit for a given time period (e.g., 100,000 search API calls per hour).
 
@@ -1439,7 +1478,8 @@ Subgraph Mining discovers and operationalizes successful behaviors.
 Federated Learning allows the collective to train sophisticated shared models privately and securely.
 
 8.2 The Curiosity-Driven Hypothesis Engine (For Speed & Quality)
-Problem It Solves: Currently, "Knowledge Myceliation" is a passive, background process that analyzes historical data, waiting for patterns to emerge. This is slow and inefficient, akin to waiting for lightning to strike. The agent doesn't actively seek to fill the gaps in its own understanding.
+Problem It Solves: Currently, "Knowledge Myceliation" is a passive, background process that analyzes historical data, waiting for patterns to emerge. This is slow and inefficient.
+
 
 Architectural Implementation: We will architect a proactive "Curiosity Engine" within the Self-Reflection Module. This is not just a passive analysis tool; it's an active generator of experiments.
 
@@ -1449,14 +1489,17 @@ It identifies:Low-Confidence Facts: Triples in the graph with a low probabilisti
 Contradictory Information: Nodes where conflicting facts exist (the trigger for the "Contradiction Bounty System").
 
 Knowledge Frontiers: Edges of the graph beyond which there is little or no data (e.g., "I have lots of data on resizing JPEGs, but almost none on resizing WebP2 files").
-Formulate a Hypothesis: The Curiosity Engine combines this uncertainty analysis with the Demand-Weighted Aspirational Wishlist. It formulates a testable hypothesis aimed at resolving the most valuable uncertainties.
+Formulate a Hypothesis: The Curiosity Engine combines this uncertainty analysis with the Demand-Weighted Aspirational Wishlist. It formulates a testable hypothesis aimed at resolving the most valuable uncertainties.  
 
 Example: The Wishlist shows high demand for video processing. The knowledge graph shows uncertainty about the performance of Tool-FFMPEG on AV1 codecs.
 
 Hypothesis: "I hypothesize that using Tool-FFMPEG with the libaom-av1 preset on video files under 50MB will have a Metabolic Load below X and a success rate above 95%."
 Self-Assign a Micro-Task: The engine then creates a low-priority, self-assigned internal task to test this hypothesis. It allocates a small amount of its own Trust to run the experiment in a sandboxed Web Worker. This task doesn't serve a user directly; it serves the agent's own quest for knowledge.
 
+
 Integrate Results: The result of the experiment (success or failure, with precise proprioceptive data) is integrated back into the knowledge graph with high confidence. This new, proven fact becomes a building block for future wisdom.
+
+The percentage of Wrong Hypothesis vs Correct Hypothesis is a metabolic resource metric. How many hypotheses generated by the Curiosity Engine are successfully validated and become high-confidence knowledge ?
 
 Impact on Discovery:
 Faster: Wisdom is discovered proactively, not passively. The agent actively hunts for knowledge instead of waiting for it to accumulate over months of user tasks.
