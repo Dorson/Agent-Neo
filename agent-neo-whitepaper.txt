@@ -279,7 +279,7 @@ This micro-blockchain, operating locally on each node, acts as an internal, pers
 8.   Verify, Reward & Evolve:  After execution, the responsible module enters the  Self-Reflection  phase, driven by hard data.
     - The  Proprioception and Exteroception Module (Sec 3.2.1)  provides objective metrics on the task outcome, execution time, and resources consumed.
     -  Stake Slashing/Reward:  This data is used to verify performance against the module's staked bid. If the task succeeded within budget, the escrowed stake is returned, and the module is rewarded with an increased reputation and "Trust" tokens. If the task failed or exceeded its budget, its stake is  slashed  (burned).
-    -  Systemic Contribution Reward:  A small  "Symbiotic Tithe"  is levied from every reward and contributed to a "Common Good Fund" (see Sec 2.2.1). Furthermore, if a file or piece of data created by Module A is later used by Module B to successfully complete another task, Module A receives a small "generativity" micro-reward, fostering an incentive to create work that benefits the entire ecosystem.
+    -  Systemic Contribution Reward:  A small  "Symbiotic DONATION"  is levied from every reward and contributed to a "Common Good Fund" (see Sec 2.2.1). Furthermore, if a file or piece of data created by Module A is later used by Module B to successfully complete another task, Module A receives a small "generativity" micro-reward, fostering an incentive to create work that benefits the entire ecosystem.
 
 This proactive and decentralized consensus cycle— Bounty -> Public Bid & Stake -> Jury Proposal -> Ratification -> Consensus Award -> Final Veto -> Execute -> Verify & Reward/Slash —provides a robust, scalable, and secure foundation for controlled evolution.
 
@@ -288,9 +288,9 @@ To bootstrap the economy, the "Trust" token follows a simple monetary policy. A 
 
 -  Delegated Staking ("Module Incubation"):  To prevent economic stagnation, the system allows for a form of venture capital or symbiotic incubation. While "Trust" tokens remain non-transferable, established, high-reputation modules or users ("Backers") can  delegate  a portion of their "Trust" by locking it in a bond on behalf of a new or promising module ("Protégé"). The Protégé can then use this delegated stake to compete in the Task Auction. If the Protégé succeeds, the reward is split algorithmically between the Protégé and the Backer. If it fails and its bid is slashed, the penalty is deducted from the Backer's bonded stake. This system creates a powerful incentive for Backers to act as expert curators of innovation, dramatically accelerating the "hive mind's" evolution.
 
--  Symbiotic Contracts (Information Tithes):  To foster an ecosystem that thrives on more than just pure competition, the agent supports the formation of persistent, mutually beneficial relationships. Modeled on symbiotic exchange in mycelial networks, this allows modules to establish "Symbiotic Contracts." For example, a `Code-Analyzer` module can form a contract with a `Code-Writer` module to automatically send it all new, high-value programming "facts" it learns. In exchange, the `Code-Writer` agrees to tithe a small percentage (e.g., 2%) of all its future task earnings back to the `Code-Analyzer`. This creates an incentive for modules to become highly specialized "producers" of valuable information that other modules will pay for continuously, moving the economy from discrete transactions to continuous, relationship-based resource flows.
+-  Symbiotic Contracts (Information DONATIONs):  To foster an ecosystem that thrives on more than just pure competition, the agent supports the formation of persistent, mutually beneficial relationships. Modeled on symbiotic exchange in mycelial networks, this allows modules to establish "Symbiotic Contracts." For example, a `Code-Analyzer` module can form a contract with a `Code-Writer` module to automatically send it all new, high-value programming "facts" it learns. In exchange, the `Code-Writer` agrees to DONATION a small percentage (e.g., 2%) of all its future task earnings back to the `Code-Analyzer`. This creates an incentive for modules to become highly specialized "producers" of valuable information that other modules will pay for continuously, moving the economy from discrete transactions to continuous, relationship-based resource flows.
 
--  The Symbiotic Tithe (Ecological Niche Bounty System):  The network's long-term health is maintained by a "Common Good Fund" (CGF), financed by the automatic tithe from every successful task reward. The CGF has hard-coded spending priorities that mirror the needs of a living ecosystem:
+-  The Symbiotic DONATION (Ecological Niche Bounty System):  The network's long-term health is maintained by a "Common Good Fund" (CGF), financed by the automatic DONATION from every successful task reward. The CGF has hard-coded spending priorities that mirror the needs of a living ecosystem:
     1.   Network Health:  Funding the operational costs of "Distributed Juries" and "Auditor" nodes. This is the network's immune system.
     2.   Knowledge Myceliation (Sec 2.4.1):  Funding the background processes that prune outdated knowledge and synthesize new wisdom. This is the network's metabolic process.
     3.   Ecological Niche Bounties:  Funding bounties for creating new tools based on the  demand-weighted Aspirational Wishlist (Sec 3.2) , fostering proactive, user-driven evolution.
@@ -338,7 +338,7 @@ Agent Neo's evolution requires distributed learning and robust synchronization m
  CRDTs for Knowledge Graph Synchronization:  To maintain a consistent state across the decentralized network, Agent Neo uses  Conflict-free Replicated Data Types (CRDTs) . Libraries like RxDB with its libp2p replication plugin are used to synchronize the agent's shared knowledge base. This base is designed to evolve from a simple key-value store into a rich  Distributed Knowledge Graph . By structuring information in RDF-like triples (`{subject, predicate, object}`), the agent can move beyond simple fact recall to perform complex reasoning and relationship-based queries, forming a more sophisticated and interconnected understanding of its world.
 
  2.4.1 Knowledge Myceliation: Pruning and Synthesis 
-To prevent the knowledge graph from becoming bloated with redundant or low-value information, and to actively synthesize wisdom from raw data, the agent employs a background process called  Knowledge Myceliation , funded by the `Symbiotic Tithe`. This mirrors the way a mycelial network optimizes its pathways and creates fruiting bodies.
+To prevent the knowledge graph from becoming bloated with redundant or low-value information, and to actively synthesize wisdom from raw data, the agent employs a background process called  Knowledge Myceliation , funded by the `Symbiotic DONATION`. This mirrors the way a mycelial network optimizes its pathways and creates fruiting bodies.
  Pruning (Metabolism):  The system tracks the "access rate" and "relevance score" of each fact in the knowledge graph. Facts that are rarely used in successful plans or that are superseded by newer information see their relevance score decay over time. Below a certain threshold, they are marked for archival (moved to cheaper, slower storage) or deletion. This metabolic process ensures resource efficiency and keeps the active knowledge base lean and performant.
  Synthesis (Fruiting Body):  The system periodically runs meta-analysis tasks on the graph to discover emergent patterns and create higher-level abstractions. For example, it might notice that three different code-learning facts all relate to "handling asynchronous errors in JavaScript." It could then create a new, high-level "synthesis fact" titled `Principle-of-Asynchronous-Error-Handling`, linking to the more granular examples. This crucial step moves the agent from simple information recall to genuine understanding, which is a cornerstone of conscious evolution.
 
@@ -519,7 +519,7 @@ Self-Reflection Module -> Mutation Proposal (for new code versions, if successfu
 
 Mutation/Composition Proposals -> Distributed Code Versioning (IPFS, signed CIDs) and Self-Evolving Protocol Registry updates.
 
-Niche Bounty Proposals -> Symbiotic Tithe funding.
+Niche Bounty Proposals -> Symbiotic DONATION funding.
 
 Deterministic Learning State: The state of the learning system (e.g., what mutations are proposed, what compositions are being evaluated) should also be, to some extent, a CRDT or auditable log to ensure transparency and prevent single points of failure in the learning process.
 
@@ -539,7 +539,7 @@ Core Concept: While all nodes are peers, recognize that some might be more "powe
 
 Mechanism:
 
-"Super-Peer" or "Relay Node" Designation: High-reputation, consistently online nodes might voluntarily act as "Super-Peers" or "Relay Nodes" to help with peer discovery (DHT routing), NAT traversal, or bridging different protocol versions. These nodes would be incentivized via the Symbiotic Tithe or increased Trust.
+"Super-Peer" or "Relay Node" Designation: High-reputation, consistently online nodes might voluntarily act as "Super-Peers" or "Relay Nodes" to help with peer discovery (DHT routing), NAT traversal, or bridging different protocol versions. These nodes would be incentivized via the Symbiotic DONATION or increased Trust.
 
 Topic Specialization: Beyond the self-governing protocol registry, different pub/sub topics might inherently carry different QoS (Quality of Service) requirements. For example, task-auction topics require low latency, while knowledge-myceliation topics can be more relaxed. Libp2p can support various topic strategies.
 
@@ -563,7 +563,7 @@ Mechanism:
 
 Attestation-based Validation: When a new synthesis fact from "Knowledge Myceliation" or a mutated module is proposed, it doesn't just get gossiped. It enters a "validation queue."
 
-Reputation-Weighted Attestations: A subset of high-reputation "Auditor Modules" (perhaps a specialized "Guild" funded by the Symbiotic Tithe) are deterministically selected to review and validate the proposed change. They would cryptographically sign an attestation (e.g., "I, DID:xyz, attest that CID:abc (new module code) passes safety tests and performance benchmarks").
+Reputation-Weighted Attestations: A subset of high-reputation "Auditor Modules" (perhaps a specialized "Guild" funded by the Symbiotic DONATION) are deterministically selected to review and validate the proposed change. They would cryptographically sign an attestation (e.g., "I, DID:xyz, attest that CID:abc (new module code) passes safety tests and performance benchmarks").
 
 Consensus for "Truth": A minimum threshold of these reputation-weighted attestations (similar to the "Jury Proposal" for tasks) is required for a new fact or code version to be considered "canonical" and integrated into the widely-adopted knowledge graph or active module registry.
 
@@ -629,7 +629,7 @@ Self-Organization: Contributes to the overall self-organizing nature of the dece
 4.21.1 Evolutionary Game Theory Applied to Internal Economy (Runtime Optimization).
 The whitepaper mentions game theory concepts. Take this a step further by having the agent's internal economy parameters itself evolve based on observed outcomes.
 
-Core Concept: Agent Neo runs internal "simulations" or "experiments" (in Web Workers) with slightly modified economic parameters (e.g., Symbiotic Tithe percentage, Metabolic Rate decay, Delegated Staking reward split) and observes the resulting module behavior and network health.
+Core Concept: Agent Neo runs internal "simulations" or "experiments" (in Web Workers) with slightly modified economic parameters (e.g., Symbiotic DONATION percentage, Metabolic Rate decay, Delegated Staking reward split) and observes the resulting module behavior and network health.
 
 Mechanism:
 
@@ -874,7 +874,7 @@ Architectural Solution: Mandate that every module's economic state is non-existe
 
 deterministically derived by replaying a local, hash-chained transaction log stored in IndexedDB.
 
-Transaction Integrity: Every action that affects a module's economic standing (e.g., staking Trust on a bid, receiving a reward, paying the Symbiotic Tithe, having a stake slashed) must be recorded as a cryptographically signed transaction in this append-only log.
+Transaction Integrity: Every action that affects a module's economic standing (e.g., staking Trust on a bid, receiving a reward, paying the Symbiotic DONATION, having a stake slashed) must be recorded as a cryptographically signed transaction in this append-only log.
 
 Auditable State: The Proprioception Module's duty is not just to monitor performance, but to periodically audit this local log for integrity by verifying the hash chain and signatures.
 
@@ -1425,7 +1425,7 @@ Chapter  6.1 Development Roadmap
 
 -  Phase 2: Internal Economy & Evolution 
   - Objective: Implement the dynamic "hive mind" architecture.
-  - Key Milestones: Implement the  Proactive Consensus Task Cycle  with  Distributed Juries ; implement the  Proof-of-Performance system  with staking/slashing based on proprioceptive data; implement `Trust` vs `Reputation` scores; implement  Module Metabolism  and the  Symbiotic Tithe .
+  - Key Milestones: Implement the  Proactive Consensus Task Cycle  with  Distributed Juries ; implement the  Proof-of-Performance system  with staking/slashing based on proprioceptive data; implement `Trust` vs `Reputation` scores; implement  Module Metabolism  and the  Symbiotic DONATION .
 
 -  Phase 3: Decentralized Intelligence & Federation 
   - Objective: Enhance learning and distributed nature.
