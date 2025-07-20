@@ -47,6 +47,8 @@ Purpose: Provide a robust, asynchronous wrapper for IndexedDB operations, abstra
 
 Responsibilities: Handle database opening, versioning, object store creation (for ledger, trust lists, knowledge chunks, DIDs, keys, session context), and provide generic utility functions for put, get, delete, getAll, and query operations with error handling. Implement transaction management for atomic operations.
 
+New Responsibility: Add a 'localVocabulary' object store to persist the agent's merged and learned vocabulary, ensuring knowledge persists across sessions.
+
 Dependencies: None.
 
 Step 6: src/core/crypto.js
@@ -491,7 +493,7 @@ Adherence to Metabolic Load predictions (resourceBalancer.js).
 
 Reputation Management: Update the agent's internal reputation score and "Trust" balance based on economic actions, recording all changes in localLedger.js.
 
-Symbiotic Tithe & Common Good Fund: Automatically levy a "Symbiotic Tithe" from every reward to fund the "Common Good Fund" (CGF). Manage CGF spending priorities (network health, knowledge myceliation, ecological niche bounties, exploratory grants).
+Symbiotic Donation & Common Good Fund: Automatically levy a "Symbiotic Donation" from every reward to fund the "Common Good Fund" (CGF). Manage CGF spending priorities (network health, knowledge myceliation, ecological niche bounties, exploratory grants).
 
 Delegated Staking: Implement mechanisms for high-reputation modules/users to delegate Trust to new modules, with algorithmic reward splitting and penalty deduction.
 
@@ -541,8 +543,6 @@ If fetching HTML, robustly extracting JavaScript code from <script> tags (both i
 
 Handling CORS and potential rate limiting.
 
-Step 21.2 (Sub-step for Robust HTML/JS Extraction): Develop robust HTML parsing logic to identify and extract all forms of JavaScript code, including inline scripts, external script links, and JavaScript embedded within HTML attributes (e.g., onclick). Implement mechanisms to handle dynamic script loading patterns (e.g., scripts injected via JavaScript) to ensure comprehensive code ingestion.
-
 JavaScript Parsing (AST Generation): Utilize a lightweight, native JavaScript parser (e.g., Esprima, Acorn, or a custom parser if feasible within the constraints) to generate an Abstract Syntax Tree (AST) from the ingested JavaScript code. This is a critical step for structured analysis.
 
 Step 21.3 (Sub-step for AST Parser Selection/Integration): Research and select a lightweight, performant, and secure native JavaScript AST parser (e.g., Acorn, Esprima, or a custom minimal parser). Integrate this parser to transform raw JavaScript code into a structured Abstract Syntax Tree.
@@ -571,6 +571,8 @@ Validation & Filtering: Implement logic to validate ingested code for relevance 
 
 Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledge/knowledgeManager.js (to feed processed data), src/networking/p2pService.js (for fetching web content), src/core/config.js (for seed URLs).
 
+Step 21.2 (Sub-step for Robust HTML/JS Extraction): Develop robust HTML parsing logic to identify and extract all forms of JavaScript code, including inline scripts, external script links, and JavaScript embedded within HTML attributes (e.g., onclick). Implement mechanisms to handle dynamic script loading patterns (e.g., scripts injected via JavaScript) to ensure comprehensive code ingestion.
+
 Step 22: src/modules/knowledgeStore.js
 
 Purpose: Manage the decentralized storage, retrieval, and distribution of agent knowledge across the network, leveraging dataTransport.js.
@@ -598,11 +600,6 @@ New Responsibility: Implement a weekly expiring ring-signed ledger for data pack
 Step 22.1 (Sub-step for BitTorrent v2 Metadata Storage): Implement storage and retrieval mechanisms for BitTorrent v2-compatible metadata (e.g., Merkle tree roots, piece hashes) associated with large knowledge data packages.
 
 Dependencies: src/data/indexedDb.js, src/core/crypto.js, src/core/identity.js, src/networking/p2pService.js, src/networking/dataTransport.js, src/core/eventBus.js.
-
-
-
-
------ Milestone ----------
 
 
 Phase 5: Agent Intelligence & Self-Improvement
@@ -635,6 +632,8 @@ New Responsibility: Dynamically request skill modules from skillManager.js when 
 
 New Responsibility: Implement lightweight "Simulation & Foresight Capabilities" to run internal simulations of potential actions and their immediate consequences (e.g., "if I execute this tool, my Metabolic Load will increase by X").
 
+New Responsibility: If naturalLanguageProcessor.js returns a low-confidence result for a user query, trigger unrecognizedTermHandler.js to initiate a learning flow instead of proceeding with an action.
+
 Step 23.1 (Sub-step for Simulation & Foresight): Develop a lightweight, in-memory "internal world model" based on a subset of the knowledgeGraph.js that can represent hypothetical state changes. Implement a simplified, computationally constrained "foresight" algorithm (e.g., a shallow decision tree traversal or rule-based projection) to simulate immediate consequences of potential actions against the internal world model. Integrate constraint checking within the simulation to verify that projected outcomes do not violate ethical principles (from ethicsModule.js) or resource limits (from resourceBalancer.js).
 
 New Responsibility: Implement an internal "Attentional Mechanism" to dynamically allocate compute and memory based on perceived urgency, expected reward, and internal "curiosity" or "learning goals."
@@ -643,7 +642,7 @@ Step 23.2 (Sub-step for Attentional Mechanisms): Implement a prioritization engi
 
 Offloading: Delegate complex planning computations to webWorkers.js.
 
-Dependencies: src/core/eventBus.js, src/core/stateManager.js, src/core/taskScheduler.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/selfReflection.js, src/core/webWorkers.js, src/modules/ai/skillMatcher.js, src/modules/ai/codeGenerator.js, src/modules/ai/selfImprovementEngine.js (for guardrails), src/modules/ai/curiosityEngine.js, src/modules/skillManager.js, src/modules/sessionContext.js, src/modules/ethicsModule.js, src/optimization/resourceBalancer.js.
+Dependencies: src/core/eventBus.js, src/core/stateManager.js, src/core/taskScheduler.js, src/modules/knowledge/knowledgeManager.js, src/modules/ai/selfReflection.js, src/core/webWorkers.js, src/modules/ai/skillMatcher.js, src/modules/ai/codeGenerator.js, src/modules/ai/selfImprovementEngine.js (for guardrails), src/modules/ai/curiosityEngine.js, src/modules/skillManager.js, src/modules/sessionContext.js, src/modules/ethicsModule.js, src/optimization/resourceBalancer.js, src/modules/ai/unrecognizedTermHandler.js.
 
 Step 24: src/modules/ai/selfReflection.js
 
@@ -686,23 +685,25 @@ Dependencies: src/core/eventBus.js, src/networking/p2pService.js, src/modules/gu
 Skill Module Discovery & Recommendation (New Sub-Phase)
 These steps introduce the core functionality for Agent Neo to understand user requests and recommend relevant JavaScript "skill modules."
 
+
+
+
 Step 25.1: src/modules/ai/naturalLanguageProcessor.js
 
-Purpose: Process natural language user requests to extract keywords, entities, and intent relevant to JavaScript functionalities.
+Purpose: Process natural language user requests into structured queries for other AI modules.
 
-Responsibilities:
+Responsibilities: Implement lightweight, native JS NLP techniques. Translate user queries into structured queries for skillMatcher.js. Enable the agent to ask clarifying questions.
 
-Implement basic natural language processing (NLP) techniques in native JS (e.g., tokenization, stemming/lemmatization, part-of-speech tagging, named entity recognition for common programming terms).
-
-Step 25.2 (Sub-step for NLP Implementation Details): Define the specific NLP techniques to be implemented (e.g., regular expressions for tokenization, custom dictionaries for stemming/lemmatization, rule-based intent classification). Develop a lightweight, native JavaScript implementation for these NLP techniques, ensuring minimal resource overhead.
-
-Translate user queries like "how to format dates" or "draw 3D graphics" into structured queries that skillMatcher.js can understand (e.g., { intent: 'format', subject: 'date' }, { intent: 'render', subject: '3D graphics' }).
-
-New Responsibility: Enable the agent to ask clarifying questions to the user to refine task scope and improve solution quality, feeding into the sessionContext.js.
+New Responsibility: Decouple from static vocabulary. Receive the entire linguistic model from vocabularyManager.js. Implement a public method to allow live updates to the vocabulary and automatically rebuild the search index.
+New Responsibility: Make the core `process` method asynchronous. It must first call `vocabularyManager.ensureVocabularyForQuery()` to predictively fetch required vocabulary chunks from the network before completing its analysis.
 
 Offloading: Utilize webWorkers.js for any computationally intensive NLP tasks.
 
-Dependencies: src/core/webWorkers.js, src/core/utils.js, src/modules/sessionContext.js.
+Dependencies: src/core/webWorkers.js, src/core/utils.js, src/modules/sessionContext.js, src/modules/ai/vocabularyManager.js.
+
+
+
+
 
 Step 25.2: src/modules/ai/skillMatcher.js
 
@@ -730,9 +731,66 @@ New Responsibility: If no suitable skill is found or if the existing skills are 
 
 Offloading: Delegate complex matching and ranking computations to webWorkers.js.
 
-Dependencies: src/modules/ai/knowledgeGraph.js, src/core/webWorkers.js, src/core/economy.js, src/modules/knowledgeStore.js, src/modules/ai/codeGenerator.js (for triggering new skill generation).
+Dependencies: src/modules/ai/knowledgeGraph.js, src/core/webWorkers.js, src/core/economy.js, src/modules/knowledgeStore.js, src/modules/ai/codeGenerator.js.
 
 Update: Load its ranking/matching model from modelManager.js and contribute to federated learning for skill matching improvements. Query skillManager.js for available and validated skill modules, prioritizing those with high reputation and positive meta flags.
+
+
+
+
+New Sub-Phase: Dynamic Vocabulary Learning
+
+
+Step 25.3: src/modules/ai/vocabularyManager.js
+
+Purpose: To manage the full lifecycle of the agent's vocabulary, enabling dynamic, decentralized, and massively scalable learning.
+
+Responsibilities:
+New Responsibility: Implement a hierarchical, on-demand vocabulary system. The manager will no longer load one large file.
+New Responsibility: On initialization, load a small `root_index.json` containing high-frequency words and pointers (CIDs) to larger, domain-specific vocabulary chunks.
+New Responsibility: Implement an intelligent cache for loaded vocabulary chunks.
+New Responsibility: Implement a new `ensureVocabularyForQuery(tokens)` method. This method will analyze query tokens, consult the root index to determine which specialized vocabulary chunks are missing, and request them from `knowledgeStore.js` before the NLP proceeds.
+New Responsibility: Merge newly fetched chunks into the in-memory vocabulary and persist the complete, merged state to IndexedDB for faster subsequent loads.
+
+Dependencies: src/data/indexedDb.js, src/core/eventBus.js, src/modules/ai/naturalLanguageProcessor.js, src/modules/knowledgeStore.js.
+
+
+
+Step 25.4: src/modules/ai/unrecognizedTermHandler.js
+
+Purpose: To initiate the learning loop when the agent fails to understand a user's request.
+
+Responsibilities:
+
+Be called by `planner.js` when `naturalLanguageProcessor.js` returns a low-confidence result.
+
+Trigger a UI flow (via `eventBus`) to ask the user for clarification about the unrecognized term(s).
+
+Listen for the user's response and package it into a "vocabulary_proposal".
+
+Dependencies: src/core/eventBus.js, src/modules/ai/planner.js.
+
+Step 25.5: src/modules/ai/vocabularyProposer.js
+
+Purpose: To formalize user-provided knowledge into a proposal for network consensus.
+
+Responsibilities:
+
+Receive a "vocabulary_proposal" from the `unrecognizedTermHandler`.
+
+Analyze the user's explanation to create a structured proposal (e.g., "Propose adding keyword 'X' to concept 'Y'").
+
+Submit the proposal to the appropriate guild for voting via `guildVoting.js`.
+
+Upon a successful vote, create a `vocabulary_update` fact and submit it to `knowledgeStore.js` for network propagation.
+
+Dependencies: src/core/eventBus.js, src/modules/guilds/guildVoting.js, src/modules/knowledgeStore.js.
+
+
+
+----- Milestone ----------
+
+
 
 Phase 6: User Interface & Deployment
 This phase focuses on the user-facing interface and packaging the DApp for real-world use as a Progressive Web App (PWA).
@@ -841,11 +899,11 @@ Initialize stateManager, taskScheduler, resourceManager, localLedger.
 
 Initialize messageProtocol, p2pService, networkMonitor, dataTransport.
 
-Initialize guilds/guildManager, guilds/guildMembership, guilds/guildVoting, guilds/guildTrustVerifier, guilds/cryptographicClusterManager.
+Initialize guilds/guildManager, guilds/guildMembership, guilds/guildVoting, guilds/guildTrustVerifier, cryptographicClusterManager.
 
 Initialize economy, knowledge/knowledgeManager, knowledge/knowledgeIngestion, knowledgeStore, planner, selfReflection, consensusManager (if needed).
 
-Initialize naturalLanguageProcessor, skillMatcher, codeGenerator, codeRefactorer, problemSolver, federatedLearner, modelManager, curiosityEngine, skillManager, skillValidator, proofOfHumanEndorsement, sessionContext, ethicsModule, proprioceptionModule.
+Initialize vocabularyManager, naturalLanguageProcessor, skillMatcher, prioritizationEngine, codeGenerator, codeRefactorer, problemSolver, federatedLearner, modelManager, curiosityEngine, skillManager, skillValidator, proofOfHumanEndorsement, sessionContext, ethicsModule, proprioceptionModule, unrecognizedTermHandler, vocabularyProposer.
 
 Initialize networkPartitionReconciliation, protocolAdapters, selfEvolvingProtocolRegistry, persistentServiceContracts, dataStorageGuild, computationalGuild, dataTransmissionGuild.
 
@@ -940,7 +998,7 @@ New Responsibility: Synthesize "Pre-emptive Guardrails" as negatively weighted r
 
 New Responsibility: Collaborate with the ethicsModule.js to leverage causal understanding for ethical evaluation, ensuring plans avoid predicted harmful causal chains.
 
-New Responsibility: Propose small, randomized changes to internal economic parameters (e.g., Symbiotic Tithe percentage, Metabolic Rate decay) for "Economic Parameter Mutation" and A/B testing, feeding results to consensusManager.js for network-wide adoption if successful.
+New Responsibility: Propose small, randomized changes to internal economic parameters (e.g., Symbiotic Donation percentage, Metabolic Rate decay) for "Economic Parameter Mutation" and A/B testing, feeding results to consensusManager.js for network-wide adoption if successful.
 
 Step 35.1 (Sub-step for Economic Parameter Mutation A/B Testing): Implement an internal "A/B testing" framework within Web Workers to apply proposed economic parameter mutations to a subset of internal module interactions (or simulations) and log their outcomes. Develop a feedback loop to analyze performance metrics (network efficiency, module diversity, task completion) under different economic parameter sets, feeding results to consensusManager.js for network-wide adoption if successful.
 
@@ -1037,7 +1095,7 @@ Model Distribution: Publish the newly aggregated and improved global model (or i
 
 Performance Monitoring: Track the performance of federated learning rounds and report metrics to selfImprovementEngine.js.
 
-Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledgeStore.js, src/modules/ai/behavioralModel.js, src/modules/ai/skillMatcher.js, src/modules/ethicsModule.js (if applicable), src/networking/p2pService.js, src/core/crypto.js, src/modules/guilds/cryptographicClusterManager.js, src/modules/ai/selfImprovementEngine.js.
+Dependencies: src/core/eventBus.js, src/core/webWorkers.js, src/modules/knowledgeStore.js, src/modules/ai/behavioralModel.js, src/modules/ai/skillMatcher.js, src/modules/ai/ethicsModule.js (if applicable), src/networking/p2pService.js, src/core/crypto.js, src/modules/guilds/cryptographicClusterManager.js, src/modules/ai/selfImprovementEngine.js.
 
 Step 35.6: src/modules/ai/modelManager.js
 
@@ -1365,6 +1423,26 @@ Request Limits: Enforce limits on guild association requests and maintain a bann
 
 Dependencies: src/core/eventBus.js, src/modules/guilds/guildTrustVerifier.js, src/networking/dataTransport.js, src/core/economy.js.
 
+Step 35.31: src/modules/ai/prioritizationEngine.js
+
+Purpose: To provide a centralized, dynamic priority calculation for agent tasks, implementing the "Attentional Mechanism."
+
+Responsibilities:
+
+Implement a `calculatePriority(taskDetails)` method that returns a numerical score.
+
+Dynamically weigh tasks based on multiple factors with configurable weights:
+
+  Perceived Urgency: Assign a high score bonus to tasks directly related to an active user goal (from sessionContext.js).
+
+  Expected Reward: Assign a score bonus based on the task's tier (micro, standard, high_value) or a future bounty system.
+
+  Internal "Curiosity" or "Learning Goals": Assign a lower base score to tasks generated internally for knowledge seeking (from curiosityEngine.js).
+
+  Adaptive Sampling: Assign a score bonus to tasks that aim to reduce knowledge uncertainty, focusing on areas of the knowledge graph with low relevance or confidence (from knowledgeManager.js).
+
+Dependencies: src/core/logger.js, src/modules/sessionContext.js, src/modules/knowledge/knowledgeManager.js.
+
 Scalability Optimizations
 These steps focus on enhancing the DApp's ability to perform efficiently and reliably as the number of agents and the volume of data in the network grow.
 
@@ -1640,3 +1718,448 @@ Provide examples and rationale for each optimization.
 Integrate into code review processes to ensure adherence.
 
 Dependencies: None (documentation).
+
+
+
+Step 49:
+
+Implement an appliction self-test JS script to evaluate app fuctionality for debugging and the display of possible internal issues.
+
+
+
+
+Step 50: AI Action STEP LIST Synthesis !
+
+Enhance the ability of the Agent Neo AI to distill complex actions or tasks into smallest possible action steps.
+
+Enhance the methods and techniques for the Agent Neo AI to formulate action steps and the logical order seqeuce of steps as a list based and seqeunce based plan.
+
+Enhance the ability of the Agent Neo AI to distill very complex tasks into concrete multi stage plans that would require multiple ordered action step lists that may include the IF , THEN , AND OR LOGIC or other logical dependencies between action steps.
+
+Allow the USER the user to see and confirm or to edit the seqeuencc of the task action steps , so that the Agent Neo user would be able to confirm or reject the full action plan, or to add and delete or shift different action steps.
+
+Allow the collective Agent Neo AI skill and action knowledge graph to learn from user inputs , when they change or confirm or reject action steps or action step order seqeunce, so that the user input for action steps is continually contributting to the development of the distributed wisdom of the Agent Neo AI.
+
+Harden the distributed action step and planing knowledge graph from hostile users and poisoned data inputs, by making the action skill step and planning learning process a multi stage process that is cross-referenced and cross-evaluated between Agent Neo nodes, ballanced and evaluated on their trust score and the total contribution of resources to the Agent Neo network.
+
+Hybrid "Synthesize-Then-Sequence" Planning & Knowledge Synthesis
+
+Purpose: To enable Agent Neo to autonomously synthesize task steps, generate optimal action sequences, and continuously learn from both successes and failures, contributing to its collective intelligence and "wisdom."
+
+Responsibilities:
+
+planner.js: Orchestrates the planning workflow, chaining HTN synthesis and CBR sequencing; manages user plan validation and initiates learning.
+
+htnPlanner.js: Decomposes high-level goals into an unordered set of primitive actions, informed by learned "Heuristic Guardrails."
+
+caseBasedReasoner.js: Generates an optimal ordered sequence from an unordered set of actions by leveraging past successful cases and actively avoiding sequences from known failure cases.
+
+causalAnalysis.js: Analyzes failed plan executions to derive and synthesize "Heuristic Guardrails."
+
+knowledgeStore.js & dataTransport.js: Manage the decentralized storage, distribution, and retrieval of all planning knowledge (HTN methods, CBR cases, Heuristic Guardrails).
+
+Validation and Learning
+The final, ordered plan is presented to the interactivePlanEditor.js for user confirmation.
+If the user re-orders the steps, this provides an incredibly strong learning signal.
+When the task completes successfully, the caseBasedReasoner saves a new case containing the unordered set of requirements and the final, successful ordered sequence. This refines its ability to sequence tasks in the future.
+
+Knowledge Synthesis Methods:
+Modified Hierarchical Task Network (HTN) Decomposition, Case-Based Reasoning (CBR) Retrieval & Adaptation, Causal Analysis of Failure
+
+Knowledge Storage Methods:
+Knowledge Graph, Vector Database/Embeddings, Content Addressing (CIDs) / IPFS, Local Caching (IndexedDB), P2P Distribution (BitTorrent v2 principles)
+
+Dependencies:
+
+planner.js, knowledgeStore.js, dataTransport.js,
+p2pService.js, interactivePlanEditor.js
+
+
+
+
+
+Step 50.1: 
+
+Proactive Skill Module Synthesis from successful Action Step Plans.
+
+Purpose: Automate the creation of reusable JavaScript skill modules by abstracting proven action step sequences from collective planning experience.
+
+Workflow & Technical Details:
+
+Skill Candidate Identification (Proactive Learning):
+
+Trigger: selfReflection.js (periodically/event-driven, funded by economy.js) proactively initiates this process, continuously scanning the collective knowledge.
+
+Algorithm: selfReflection.js performs Frequent Subgraph Mining (via webWorkers.js or computationalGuild.js) on knowledgeGraph.js's stored CBRCase orderedPlan sequences. This actively searches for recurring patterns.
+
+Criteria: Identifies recurring, high-performance (high proofOfHumanEndorsement.js scores, low proprioceptionModule.js Metabolic Load) primitive action sub-sequences.
+
+Abstraction: Abstracts identified sequences, inferring variable inputs/outputs, preconditions, and postconditions.
+
+Output: SkillModuleProposal (abstracted sequence, metadata, provenance CIDs) to codeGenerator.js.
+
+Skill Module Code Generation:
+
+Module: codeGenerator.js.
+
+Process: Synthesizes JavaScript code and a ToolManifest for the proposed skill, leveraging knowledgeGraph.js for code patterns.
+
+Output: JS code (string/Blob) and ToolManifest to skillValidator.js.
+
+Skill Module Validation & Integration:
+
+Module: skillValidator.js.
+
+Process: Rigorous sandboxed testing in webWorkers.js with resourceManager.js limits. Includes:
+
+Static Analysis: Disallowed APIs, loops, syntax.
+
+Runtime Profiling: Measures actual CPU, memory, network for Metabolic Load estimation.
+
+Behavioral Testing: Verifies functionality against inputs/outputs.
+
+Security Vetting: Malicious pattern detection.
+
+Output: Validation Report.
+
+Integration (skillManager.js): If validated, skillManager.js assigns CID, stores code/manifest in knowledgeStore.js, updates local registry. Publishes skill CID and metadata (including meta-flags signed by validating nodes) via p2pService.js.
+
+Incentivization: economy.js rewards successful synthesis/validation.
+
+Decentralized Knowledge Integration & Propagation:
+
+Knowledge Graph Update: New skill module (CID, manifest, capabilities, performance) is added as facts to knowledgeGraph.js.
+
+Reputation: Originating node's reputationScore (and computationalGuild.js's) is boosted.
+
+Consensus:
+High numerical occurrence of new synthesized skill module Hash ID across peers of SKILL GUILD, may trigger CRYPTOGRAPHIC RING TRUST CLUSTER validation for the inclusion in the distributed data storage for skill modules of the Skill GUILD.
+
+Validation using zk-STARKs via guildVoting.js for collective vetting for the new skill modules.
+
+
+
+
+
+Step 51:
+
+Evaluate the codebase scripts for how the messages are send between Nodes.
+Hareden direct / unrequested messaging architecture and logic. make it deployment ready.
+Make sure the Only GUILD peers can send direct messages to other GUILD peers.
+
+Implement the direct Message Allow and disallow lists. 
+
+
+
+
+Step 52:
+
+Harden DATA transmission to be deployment ready.
+
+Evaluate the codebase scripts for how the distributed data packages are send between Agent Neo Nodes.
+
+Evaluate how the unrequested data packages are handled in the code hase.
+
+Make sure the DATA TRANSMISSION GUILDs transmit packages fairly and respect personal DATA TRANSMISSION limits of the Agent Neo nodes.
+
+Make sure the internal script logic respects the DATA TRANSMISSION limits that the
+user may define in the user settings of the UI.
+
+Evaluate and enhance DATA PACKAGE reliablity for packages that were requested by the Agen Neo Nodes that may NOT have a direct connection to other nodes that store the publicly avilable data packages of the DATA STORAGE GUILDs.
+
+
+Harden the safety and protection logic for the local and private data of the Agent Neo Node user.
+
+
+Step 53:  GAMER GUILD Type.
+
+Evaluate and explain how the GAMER GUILDs may form and how the GAMER GUILD peers may play and develop distributted skill moudles for games. Evaluate and explain possible multi-player capability for GAMER GUILD peers inside of their GUILD.
+
+Introduce a new GUILD type for Agent Neo nodes that want to participate in the peer to peer GAMING Guilds.
+
+Confirm that the code files allow the GAMER GUILD peers to develop skill modules for games and to play them inside of their GUILD. Harden the code logic to prevent mass spamming, unrequested mass messaging, unrequested mass data distribution without request.
+
+Make sure the GAMER GUILD code logic is safe and hadened against common and edge case hostile user attacks. Make sure spamming and hostile or destructive behaiviour has an economic cost , computational cost and the cost of trust point loss inside of the GAMER GUILD.
+
+Step 54: Implement a Structured, Multi-Layered NLP Pipeline for Deeper Language Understanding
+
+Purpose: To fundamentally upgrade Agent Neo's linguistic capabilities from a keyword-based system to a multi-stage pipeline that performs grammatical and semantic analysis, enabling a true understanding of user requests.
+
+Responsibilities:
+
+Step 54.1: Architect a Structured, Multi-Layered NLP Pipeline: Refactor naturalLanguageProcessor.js to move away from simple keyword scoring. The new architecture will produce a rich, structured "Abstract Meaning Representation" (AMR) instead of just a list of matched concepts.
+
+Step 54.2: Implement the NLP Pipeline in a Dedicated Worker (nlp-worker.js): To ensure the UI remains responsive, the entire multi-stage pipeline will be offloaded to a new Web Worker. The pipeline will execute the following steps in order:
+    - Part-of-Speech (POS) Tagging: Identify the grammatical type of each word (Noun, Verb, Adjective, etc.).
+    - Dependency Parsing: Build a tree that identifies the relationships between words (subject, object, modifiers).
+    - Semantic Role Labeling (SRL) & SVO Extraction: Interpret the grammatical structure to find the core meaning: Subject-Verb-Object.
+    - Concept & Entity Linking: Link the identified entities to their corresponding concepts in the agent's Knowledge Graph.
+
+Step 54.3: Develop a Hybrid Implementation Strategy (Native JS/WASM):
+    - Rule-Based Systems: For initial POS tagging and parsing, start with a lightweight, rule-based engine defined within updatable vocabulary files.
+    - WebAssembly (WASM) for Advanced Models: For high-accuracy dependency parsing and SRL, compile a small, pre-trained, and highly-optimized NLP model (e.g., from spaCy or similar) to WebAssembly.
+    - Decentralized Model Updates: The WASM model and its data files will be treated as a "knowledge package," addressable by a CID and distributed via knowledgeStore.js, allowing the agent's core NLP model to be updated through decentralized governance.
+
+Step 54.4: Enhance Vocabulary and Knowledge Graph for Richer Semantics:
+    - Update vocabulary files (e.g., root_index.json) to include default Part-of-Speech (POS) tags for concepts.
+    - Update knowledgeGraph.js to store and query these richer semantic relationships.
+    - Upgrade planner.js and skillMatcher.js to leverage this detailed understanding for more accurate and effective plan creation and skill matching.
+
+Step 55: Endow Agent Neo with Innate Programming Language Understanding & In-Browser Wasm Compilation
+
+Purpose: To dramatically accelerate the agent's self-evolution by pre-loading it with a foundational, structured understanding of JavaScript and WebAssembly Text Format (WAT), and giving it the tools to compile Wasm in the browser.
+
+Responsibilities:
+
+Step 55.1: Create Dedicated Programming Language Vocabularies: Develop new, structured vocabulary files (e.g., `data/vocabulary/lang_javascript.json`, `data/vocabulary/lang_wat.json`). These files will define the keywords, operators, and constructs of each language and their semantic roles (e.g., `function` is a `DECLARATION_KEYWORD`), providing a grammar for the agent.
+
+Step 55.2: Implement an In-Browser Wasm Compiler Module (`wasmCompiler.js`):
+    - Vendor a high-performance, Wasm-compiled toolchain like `binaryen.js` locally within the DApp to ensure offline-first capability.
+    - Create a new `wasm-compiler-worker.js` to run `binaryen.js`, exposing a simple API to compile WAT strings into `.wasm` binary data (Uint8Array).
+    - Develop a `wasmCompiler.js` manager to provide a clean, promise-based interface (`compile(watString)`) that offloads compilation to the worker, preventing UI blocking.
+
+Step 55.3: Enhance Code Ingestion with Deep Semantic Parsing (`js-ingestion-worker.js`): Upgrade the knowledge ingestion worker. After generating an Abstract Syntax Tree (AST), it will now use the new programming language vocabularies to perform a deep semantic parse. It will tag AST nodes with their precise programming-language roles, creating incredibly rich, machine-readable facts for the knowledge graph.
+
+Step 55.4: Upgrade Code Generator (`codeGenerator.js`) for Wasm Synthesis: Enhance the code generator to be a primary consumer of this new knowledge. It will now be able to query the knowledge graph for specific JS/WAT constructs. For performance-critical tasks, it will synthesize WAT code as a string and use the new `wasmCompiler.js` to compile it into an executable WebAssembly module on-the-fly.
+
+Step 56: Implement the JS-to-Wasm Hardening Pipeline for Self-Evolving Skills
+
+Purpose: To create a robust, in-browser compilation pipeline that allows Agent Neo to "harden" its own synthesized JavaScript skills into secure, sandboxed, and performant WebAssembly modules. This provides a critical safety and performance layer for the agent's self-evolution capabilities, transforming flexible JS into optimized Wasm for execution.
+
+Responsibilities:
+
+Step 56.1: Create a Skill Hardening Service (`skillHardeningService.js`):
+    - Develop a new singleton service that provides a high-level API (`hardenSkill(jsCodeString)`) to orchestrate the JS-to-Wasm compilation process.
+    - This service will offload all the complex parsing and compilation work to a dedicated web worker to ensure the main application UI remains responsive.
+
+Step 56.2: Implement the In-Browser Compiler Worker (`js-to-wasm-worker.js`):
+    - Create a new, dedicated web worker that acts as a real, working in-browser JS-to-Wasm compiler.
+    - It will use `acorn.js` to parse the incoming JavaScript string into an Abstract Syntax Tree (AST).
+    - It will then analyze the AST to extract a key piece of information (e.g., the first numeric literal, as a proof-of-concept).
+    - Using the powerful `binaryen.js` library, it will dynamically generate a new WebAssembly Text Format (WAT) string that creates a Wasm function returning the extracted value.
+    - Finally, it will use `binaryen.js` to compile this WAT string into a final, executable `.wasm` binary (Uint8Array) and return it to the main thread.
+
+Step 56.3: Upgrade the Skill Manager (`skillManager.js`) for the Full Wasm Lifecycle:
+    - Enhance the `skillManager` to listen for newly synthesized JS skills from the planner/code generator.
+    - Upon receiving a new skill, it will call the `skillHardeningService` to compile it into a Wasm binary.
+    - The `executeSkill` method will be upgraded to handle both traditional JS skills and these new Wasm-based skills, by instantiating the Wasm module and calling its exported entrypoint function. This completes the full self-evolution loop from synthesis to secure execution.
+
+Step 56.4: Provide a Functional Wasm Runtime Stand-in (`src/vendor/quickjs.wasm.js`):
+    - Include a real, minimal, but valid WebAssembly module (encoded as a Base64 string).
+    - This module serves as a functional stand-in for a more complex JS-in-Wasm runtime (like QuickJS), allowing the entire pipeline—from JS input to Wasm output and execution—to be fully tested and validated.
+
+
+
+
+Step 57: Graceful GPU Utilization with CPU Fallback.
+
+System Optimization & Hardening.
+
+GPU Detection & Management (`src/data/resourceManager.js`): Enhanced the resource manager to detect the availability of the WebGPU API upon application startup. It now maintains the state of GPU support (`isAvailable`) and implements a "circuit breaker" pattern. If the GPU worker reports repeated failures, the manager temporarily disables GPU offloading for a cool-down period, ensuring system stability and preventing repeated calls to a faulty GPU driver.
+
+Smart Dispatcher (`src/core/crypto.js`): The `generateZkStarkProof` function was refactored into an intelligent dispatcher. It queries the `resourceManager` for GPU status. If a GPU is available and enabled, it offloads the computationally intensive proof generation to a dedicated GPU worker. Otherwise, it seamlessly falls back to the existing, reliable CPU-based implementation.
+
+Cryptographic Verification: To ensure the integrity of results from the sandboxed worker environment, the `crypto.js` module now performs a CPU-based verification (`verifyZkStarkProof`) on any proof object returned by the GPU worker. This "trust but verify" approach guarantees cryptographic correctness even if there's a bug in the GPU shader code.
+
+- Dedicated GPU Worker (`public/workers/crypto-gpu-worker.js`): A new Web Worker was created to handle all WebGPU computations. It is architected for production use, initializing the expensive GPU context (device, pipeline) only once and caching it for subsequent calls. It includes robust error handling and a listener for the `device.lost` event to gracefully handle GPU crashes or sleep events, making the system more resilient. This provides a performant and hardened foundation for offloading parallel tasks like zk-STARKs and future AI computations.
+
+
+
+Step 58:   External AI integration.
+
+Formally develop Agent Neo skill module for the external Ai integration with Google Gemini and Chat GPT and Mistral Ai and Claude Ai.
+
+Allow the HUMAN USER to set their API key for the skill module parameter settings for the external Ai integrations of Google Gemini and Chat GPT and Mistral Ai and Claude Ai.
+
+Formally develop Agent Neo skill module for the external search on Google search.
+
+
+
+
+Step 59: Write detailed Technical documentation.
+
+The Technical Documentation should have its own file folder.
+
+The Technical Documentation should be broken down in interconnected and small HTML files , that are easy to edit and mange.
+
+The technical documentation should explain how the Agent Neo code base functions in full technical detail.
+
+The technical documentation should include the Agent Neo API calls, so that other software developers may develop their own Agent Neo implementations with same API calls.
+
+
+
+Step 59: Formalize and Harden the Agent Neo task execution loop for deployment phase.
+
+Agent Neo Task Execution Loop Stages (Executed by the AI Agent):
+Loop Stage 1: Mission Vision Formulation and Synthesis
+
+Purpose: For Agent Neo to establish a clear, overarching understanding of the task's purpose and scope, ensuring alignment with strategic objectives, initial resource viability, and adherence to its internal regulatory frameworks. This stage sets the foundational contract for all subsequent actions, often initiated or refined with human input.
+
+AI Agent Activities:
+
+Defines Task Mission Vision: Agent Neo synthesizes the ultimate objective based on initial human input or predefined goals.
+
+Defines Scope: Agent Neo establishes precise boundaries for the task, explicitly defining included and excluded components, data sets, and system interactions, potentially seeking human clarification.
+
+Defines Goals (SMART & Verifiable): Agent Neo breaks down the mission vision into specific, measurable, achievable, relevant, and time-bound (SMART) goals with quantifiable success criteria.
+
+Defines Intended Results & Deliverables: Agent Neo specifies the tangible, verifiable outcomes and deliverables expected upon successful completion.
+
+Performs Initial Resource Assessment & Validation: Agent Neo conducts a preliminary, automated evaluation of required resources and validates their availability.
+
+Facilitates Stakeholder Alignment & Approval (Automated/Human-in-the-Loop): Agent Neo ensures alignment with pre-defined stakeholder policies or triggers a human approval workflow if deviations are detected or high-impact tasks are identified.
+
+Conducts Initial Risk Assessment & Mitigation Strategy: Agent Neo identifies potential risks and formulates preliminary mitigation strategies.
+
+Performs Compliance & Regulatory Review: Agent Neo checks the task against its internal regulatory frameworks, which are explicitly defined by ethical parameters, metabolic parameters, and internal trust value parameters to other Agent Neo AI nodes.
+
+Loop Stage 2: Task Action Steps Formulation and Synthesis
+
+Purpose: For Agent Neo to translate the high-level mission vision into concrete, atomic, and actionable steps, considering available tools, methods, their operational characteristics, and potential security implications, all while adhering to its internal regulatory frameworks. This stage formalizes what needs to be done.
+
+AI Agent Activities:
+
+Performs Decomposition & Atomization: Agent Neo breaks down defined goals into the smallest, independently executable action steps.
+
+Defines Formal Scope & Result for Action Steps: Agent Neo formally defines individual scope, inputs, outputs, and intended results for each atomic action step.
+
+Performs Automated Tool and Method Selection: Agent Neo evaluates and selects the most appropriate tools, algorithms, and methodologies from its registry, considering constraints imposed by ethical, metabolic, and trust parameters.
+
+Constructs Dependency Graph: Agent Neo identifies and formally maps all inter-dependencies between action steps, forming a directed acyclic graph (DAG).
+
+Specifies Input/Output Contract: Agent Neo defines strict input and output schemas for each action step.
+
+Performs Security Threat Modeling per Step: Agent Neo analyzes each step for potential security vulnerabilities and proposes countermeasures, guided by its ethical and trust parameters.
+
+Loop Stage 3: Action Step Sequence Conversion and Execution Plan Generation
+
+Purpose: For Agent Neo to transform the formulated action steps into a precise, ordered, and executable plan, incorporating robust strategies for fault tolerance, contingency, auditable state transitions, and resource optimization, ensuring compliance with its internal regulatory frameworks. This stage focuses on how and when things will be done.
+
+AI Agent Activities:
+
+Performs Automated Sequence Ordering & Graph Traversal: Agent Neo generates the optimal logical and sequential order for action steps based on the dependency graph.
+
+Generates Detailed, Versioned Execution Plan: Agent Neo creates a comprehensive, machine-executable, versioned, and immutable list of steps.
+
+Formulates Formalized Error Handling Strategies: Agent Neo defines explicit, programmatic error handling strategies for each step, including anticipated failure modes, state transitions on error, and logging requirements, consistent with its ethical and metabolic parameters.
+
+Develops Automated Contingency & Rollback Options: Agent Neo designs alternative approaches or fallback plans and defines rollback procedures for critical operations.
+
+Manages Dynamic Resource Allocation & Reservation: Agent Neo assigns and potentially reserves specific resources to each step, optimizing based on metabolic parameters and trust values with other nodes.
+
+Performs Plan Validation & Simulation: Agent Neo conducts a dry run or simulation of the generated plan to identify inconsistencies.
+
+Performs Resource Cost Estimation & Optimization: Agent Neo estimates and optimizes the resource cost for the entire plan, heavily influenced by metabolic parameters.
+
+Enforces Security Policy per Step: Agent Neo integrates security policy enforcement mechanisms into each step, derived from its ethical and trust parameters.
+
+Loop Stage 4: Current Task Completion Evaluation and TODO Formulation
+
+Purpose: For Agent Neo to continuously assess progress against the execution plan, identify the next immediate, high-priority work item, and perform comprehensive pre-execution validation including security and idempotency checks, all within the bounds of its internal regulatory frameworks. This stage drives the iterative nature of the loop.
+
+AI Agent Activities:
+
+Performs Automated Current Completion Level Evaluation: Agent Neo continuously assesses the real-time status of the execution plan.
+
+Formulates Dynamic TODO Step: Agent Neo programmatically identifies the single, most critical, and actionable "TODO" step ready for execution.
+
+Prioritizes TODOs (Algorithmic): Agent Neo prioritizes executable TODOs using a configurable algorithm based on various factors.
+
+Performs Pre-flight Dependency & Resource Checks: Agent Neo verifies that all prerequisites for the selected TODO step are met.
+
+Conducts Pre-execution Security Scan: Agent Neo performs checks like input validation and credential verification, adhering to its ethical and trust parameters.
+
+Performs Idempotency Check: Agent Neo verifies the step can be safely re-run without unintended side effects.
+
+Loop Stage 5: TODO Execution and Progress Documentation
+
+Purpose: For Agent Neo to perform the actual work for the identified TODO step in an idempotent, fault-tolerant, and secure manner, meticulously document the outcome, and dynamically manage the TODO list based on execution results, including post-execution verification, while strictly adhering to its internal regulatory frameworks. This is the core execution stage.
+
+AI Agent Activities:
+
+Executes Idempotent Workload: Agent Neo performs the defined work for the current TODO step, ensuring idempotency.
+
+Implements Robust, Multi-layered Error Handling: Agent Neo applies real-time monitoring, configurable retry mechanisms, circuit breakers, dead-letter queue integration, and escalation protocols, with responses guided by ethical and metabolic parameters.
+
+Updates Structured Progress Documentation & State: Agent Neo records the outcome, updates the status, stores output data, and logs execution metadata, ensuring compliance with auditability requirements.
+
+Manages Dynamic TODO List: Agent Neo clears completed TODOs and dynamically adds new sub-tasks or corrective actions if identified.
+
+Logs Comprehensive External Interactions: Agent Neo maintains a detailed, immutable log of all interactions with external systems, including any deviations from ethical or trust parameters.
+
+Performs Post-execution Verification & Data Integrity Checks: Agent Neo validates outputs and ensures data integrity, verifying against expected outcomes and ethical constraints.
+
+Manages Dynamic Resource Scaling: Agent Neo adjusts resource allocation based on real-time needs, considering metabolic efficiency.
+
+Integrates Secrets Management: Agent Neo securely accesses and manages credentials, following strict ethical and security guidelines.
+
+Enforces Input Sanitization & Output Encoding: Agent Neo applies runtime validation for inputs and outputs, preventing security vulnerabilities and ensuring data integrity.
+
+Loop Stage 6: Task Execution Plan Completion Evaluation & Re-evaluation Triggers
+
+Purpose: For Agent Neo to determine if the overall task is complete or if further iteration is required, with built-in, automated mechanisms for re-evaluation of higher-level stages if significant issues, deviations, or unrecoverable failures occur, and to facilitate continuous learning, all while assessing adherence to its internal regulatory frameworks.
+
+AI Agent Activities:
+
+Performs Automated Completion Check: Agent Neo continuously reviews the execution plan to determine overall task completion, including checks against ethical and metabolic goals.
+
+Triggers Conditional Loop Back & Re-evaluation: Agent Neo decides whether to return to Stage 4 for normal iteration or trigger a jump to Stage 2 (re-planning) or Stage 1 (re-scoping) based on predefined conditions (e.g., persistent failures, significant deviations, external changes, timeouts, or violations of ethical/metabolic/trust parameters).
+
+Generates Final Output, Reporting, & Archival: Upon completion, Agent Neo generates reports, delivers results, and performs cleanup/archival, including a summary of compliance with internal regulatory frameworks.
+
+Performs Automated Post-completion Validation: Agent Neo conducts end-to-end testing or business outcome verification, ensuring alignment with ethical and metabolic goals.
+
+Automates Root Cause Analysis: Agent Neo initiates automated root cause analysis for failures, identifying if the cause relates to a breach of ethical, metabolic, or trust parameters.
+
+Facilitates Learning & Adaptation: Agent Neo feeds back insights to improve future planning and execution, refining its understanding and application of ethical, metabolic, and trust parameters.
+
+Key Deployment Considerations
+Monitoring & Alerting: Implement robust monitoring of Agent Neo's health, task progress, resource utilization, and error rates. Configure automated alerts for critical failures or deviations, especially those related to ethical or trust parameter violations.
+
+Security & Access Control: Ensure all interactions with external systems are authenticated and authorized. Implement granular access control for Agent Neo components and data, reinforced by internal trust values.
+
+Scalability & Concurrency: Design Agent Neo to handle multiple concurrent tasks. Utilize distributed processing patterns where appropriate, managing inter-node trust relationships.
+
+Data Management: Implement clear data retention policies, backup strategies, and data integrity checks, considering ethical implications of data handling.
+
+Version Control & Rollbacks: Maintain version control for Agent Neo's code, configurations, and task plans. Implement capabilities for rolling back to previous stable states.
+
+Auditing & Compliance: Ensure all actions are logged and auditable for compliance requirements and post-mortem analysis, with specific focus on adherence to ethical, metabolic, and trust parameters.
+
+Configuration Management: Externalize and manage configurations (e.g., API keys, thresholds, retry policies, ethical/metabolic/trust parameter definitions) securely.
+
+Deployment Tricks & Advanced Hardening Details
+To further enhance Agent Neo's readiness for open internet deployment and handle complex edge cases:
+
+Canary Deployments / A/B Testing for Task Plans: For high-impact changes to Agent Neo's logic or task plans, deploy them to a small subset of traffic or in parallel with existing plans to observe behavior before full rollout, assessing impact on ethical and metabolic parameters.
+
+Chaos Engineering Principles: Proactively inject controlled failures (e.g., network latency, resource exhaustion, service unavailability) into the environment to test Agent Neo's resilience and recovery mechanisms in a controlled manner, and observe how it maintains ethical and trust boundaries.
+
+Circuit Breakers and Bulkheads: Implement these patterns to isolate failing components or external services, preventing cascading failures and ensuring that a problem in one area doesn't bring down the entire Agent Neo system.
+
+Rate Limiting and Throttling (Outbound): Implement intelligent rate limiting for outbound calls to external APIs or services to avoid hitting their limits, getting blocked, or incurring unexpected costs, while also considering metabolic efficiency.
+
+Dynamic Input/Output Schema Validation (Runtime): Beyond defining schemas, enforce them at runtime for all inputs and outputs to catch data inconsistencies or malicious injections early, aligning with ethical data handling.
+
+Data Masking / Redaction: Automatically mask or redact sensitive information (e.g., PII, credentials) from logs, monitoring dashboards, and temporary storage to enhance security and compliance with ethical parameters.
+
+Immutable Infrastructure for Agents: Deploy Agent Neo components as immutable artifacts (e.g., Docker containers, AMIs). Any change requires a new deployment, ensuring consistency and simplifying rollbacks.
+
+Automated Security Scans (SAST/DAST): Integrate static application security testing (SAST) for Agent Neo's code and dynamic application security testing (DAST) for any web-facing components or generated outputs.
+
+Decentralized / Distributed Execution: Distribute Agent Neo components across multiple availability zones or regions to enhance fault tolerance and reduce latency, leveraging internal trust values for secure communication.
+
+Warm Standby / Active-Active Setups: For critical tasks, maintain warm standby or active-active Agent Neo instances to ensure immediate failover in case of an agent instance failure.
+
+Predictive Maintenance / Failure Prediction: Utilize machine learning models to analyze historical logs and metrics to predict potential failures before they occur, allowing for proactive intervention and maintaining metabolic stability.
+
+Semantic Versioning for Task Plans: Assign semantic versions to task plans and their components to manage changes and ensure compatibility.
+
+Automated Dependency Updates & Vulnerability Scanning: Regularly scan and automatically update dependencies to patch known vulnerabilities.
+
+Contextual Logging: Ensure logs contain sufficient context (e.g., task ID, stage, step ID, user ID, relevant ethical/metabolic/trust parameters) to facilitate debugging and auditing.
+
+Automated Rollback Procedures: For critical task failures or deployment issues, define and automate procedures to revert the system to a known good state, considering the impact on ethical and metabolic integrity.
+
+
+
